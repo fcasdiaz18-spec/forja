@@ -1,5 +1,5 @@
 // FORJA · service worker: funciona sin conexión y se actualiza solo (red primero, caché de respaldo)
-const CACHE = 'forja-v6';
+const CACHE = 'forja-v7';
 const ASSETS = ['./', './index.html', './manifest.webmanifest', './icon-180.png', './icon-192.png', './icon-512.png'];
 
 self.addEventListener('install', e => {

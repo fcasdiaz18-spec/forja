@@ -136,7 +136,7 @@ dialog::backdrop{background:rgba(0,0,0,.65)}
 <script>
 'use strict';
 /* ================= Constantes ================= */
-const VERSION='1.4.1';
+const VERSION='1.5';
 const COLORS={crossfit:'#FF6B1A',hyrox:'#6FA8FF',padel:'#C6F432'};
 const TIPOS={crossfit:'CrossFit',hyrox:'HYROX',padel:'Pádel'};
 const ANGULOS=[['frente','Frente'],['perfil','Perfil'],['espalda','Espalda']];
@@ -325,7 +325,19 @@ function haeWorkouts(s){
 }
 function adivinaTipo(n){n=String(n||'').toLowerCase();if(/p[aá]del|tenis|tennis|raque|racquet|pickle|squash/.test(n))return'padel';if(/run|carrera|corr|cardio mix|mixed cardio|row|remo|ski|elliptical|el[ií]ptica/.test(n))return'hyrox';if(/functional|strength|cross|hiit|high intensity|interval|core|fuerza|funcional|training|kickbox|boxing/.test(n))return'crossfit';return null;}
 // Entrenos registrados + entrenos del Watch aún no registrados (solo disciplinas conocidas, 15 min o más)
-function allEnt(){return D.entrenos.concat(WW.filter(w=>(w.min||0)>=15&&adivinaTipo(w.nombre)&&!D.entrenos.some(e=>e.watchId===w.id)).map(w=>({fecha:w.fecha,tipo:adivinaTipo(w.nombre),duracion:w.min,kcal:w.kcal,titulo:w.nombre,auto:true})));}
+const NOMBRES_ES={'Functional Strength Training':'Entrenamiento funcional','Traditional Strength Training':'Fuerza tradicional','High Intensity Interval Training':'HIIT','Cross Training':'Entrenamiento cruzado','Core Training':'Core','Tennis':'Pádel (registrado como tenis)','Padel':'Pádel','Walking':'Caminata','Running':'Carrera','Cycling':'Ciclismo','Rowing':'Remo','Mixed Cardio':'Cardio mixto','Hiking':'Trekking','Swimming':'Natación','Yoga':'Yoga'};
+const nombreES=n=>NOMBRES_ES[n]||n;
+const famW=w=>{const t=adivinaTipo(w.nombre);return t==='padel'?'padel':t?'func':null;};
+const famP=t=>t==='padel'?'padel':'func';
+const minDia=h=>{const [a,b]=String(h||'').split(':').map(Number);return isNaN(a)?null:a*60+(b||0);};
+// Sesión del calendario que corresponde a un entreno del Watch (misma fecha, ±2 h, misma familia)
+function planDeWatch(w){const m=minDia(w.hora);let best=null,bd=1e9;for(const p of D.plan){if(p.fecha!==w.fecha||famP(p.tipo)!==famW(w))continue;const d=Math.abs((minDia(p.hora)??m)-m);if(d<=120&&d<bd){bd=d;best=p;}}return best;}
+function watchDePlan(p){const m=minDia(p.hora);let best=null,bd=1e9;for(const w of WW){if(w.fecha!==p.fecha||(w.min||0)<15||famW(w)!==famP(p.tipo))continue;const d=m==null?0:Math.abs(minDia(w.hora)-m);if(d<=120&&d<bd){bd=d;best=w;}}return best;}
+// Tipo de un entreno del Watch: lo que elegiste a mano > la clase del calendario > lo que adivina por el nombre
+function tipoWatch(w){return (S.wwTipo||{})[w.id]||planDeWatch(w)?.tipo||adivinaTipo(w.nombre);}
+const hechoPlan=p=>!!p.hecho||!!watchDePlan(p);
+// Entrenos registrados + entrenos del Watch aún no registrados (15 min o más)
+function allEnt(){return D.entrenos.concat(WW.filter(w=>(w.min||0)>=15&&tipoWatch(w)&&!D.entrenos.some(e=>e.watchId===w.id)).map(w=>({fecha:w.fecha,tipo:tipoWatch(w),duracion:w.min,kcal:w.kcal,titulo:w.nombre,auto:true})));}
 function workoutPara(fecha,hora){
  const c=WW.filter(w=>w.fecha===fecha&&(w.min==null||w.min>=15)&&!D.entrenos.some(e=>e.watchId===w.id));if(!c.length)return null;
  if(!hora)return c[0];const m=h=>{const [a,b]=String(h).split(':').map(Number);return a*60+(b||0);};
@@ -508,7 +520,7 @@ function vHoy(){
 <section class="card" style="padding:12px 14px;flex-direction:row;align-items:center;gap:12px">
  <span class="ico" style="background:var(--s2);width:40px;height:40px">${ico('watch',20,'#C9CDD3')}</span>
  <span class="grow"><b class="sm">Apple Watch</b><span class="xs muted">${fuenteWatch()?'Sincronizado '+relTime(S.lastSync):S.lastImport?'Importado '+relTime(S.lastImport):'Sin datos · importa desde Salud'}</span></span>
- ${fuenteWatch()?`<button class="btn" data-act="sync" ${ui.sincronizando?'disabled':''} aria-label="Sincronizar">${ui.sincronizando?'<span class="spin"></span>':ico('sync',18)}</button><button class="btn" data-act="pegar">Pegar</button>`:`<button class="btn ${S.lastImport&&Date.now()-new Date(S.lastImport)<7*864e5?'':'pri'}" data-act="importSalud">Importar</button>`}
+ ${fuenteWatch()?`<button class="btn" data-act="sync" ${ui.sincronizando?'disabled':''} aria-label="Sincronizar">${ui.sincronizando?'<span class="spin"></span>':ico('sync',18)}</button>`:''}<button class="btn ${S.lastImport&&Date.now()-new Date(S.lastImport)<7*864e5?'':'pri'}" data-act="importSalud">Importar</button>
 </section>
 
 <section class="card">
@@ -564,17 +576,18 @@ function suenoFases(d){
 
 /* ---------- Semana / calendario ---------- */
 function planItem(p){
- const sub=[p.duracion?fN(p.duracion,0)+' min':null,p.serie?'Semanal':null,p.notas||null].filter(Boolean).map(esc).join(' · ');
- return `<div class="pitem ${p.hecho?'done':''}">
+ const w=!p.hecho?watchDePlan(p):null;
+ const sub=[p.duracion?fN(p.duracion,0)+' min':null,p.serie?'Semanal':null,p.notas||null,w?`Watch ${w.hora} · ${w.min} min${w.kcal?' · '+fN(w.kcal,0)+' kcal':''}`:null].filter(Boolean).map(esc).join(' · ');
+ return `<div class="pitem ${p.hecho||w?'done':''}">
  <button class="pbtn" data-act="editPlan" data-v="${p.id}"><span class="hora">${esc(p.hora||'—')}</span><span class="ico" style="background:${COLORS[p.tipo]};width:40px;height:40px">${ico(p.tipo,20,'#0B0C0E',2.3)}</span><span class="grow"><b style="font-size:15px">${esc(p.titulo||TIPOS[p.tipo])}</b>${sub?`<span class="xs muted">${sub}</span>`:''}</span></button>
- ${p.hecho?`<button class="pill" data-act="editEntreno" data-v="${p.hecho}" style="border:0;color:var(--pa);font-weight:700;cursor:pointer;min-height:36px">${ico('check',14,'#C6F432',2.6)}Hecho</button>`:`<button class="btn" data-act="hacerPlan" data-v="${p.id}" style="min-height:40px;padding:0 12px">Hecho</button>`}
+ ${p.hecho?`<button class="pill" data-act="editEntreno" data-v="${p.hecho}" style="border:0;color:var(--pa);font-weight:700;cursor:pointer;min-height:36px">${ico('check',14,'#C6F432',2.6)}Hecho</button>`:w?`<button class="pill" data-act="hacerPlan" data-v="${p.id}" style="border:0;color:var(--pa);font-weight:700;cursor:pointer;min-height:36px">${ico('watch',14,'#C6F432',2.4)}Hecho</button>`:`<button class="btn" data-act="hacerPlan" data-v="${p.id}" style="min-height:40px;padding:0 12px">Hecho</button>`}
  </div>`;
 }
 function vSemana(){
  const lun=addDays(semanaLunes(),7*ui.semana),dom=addDays(lun,6);
  const items=D.plan.filter(p=>p.fecha>=lun&&p.fecha<=dom);
- const res=Object.keys(TIPOS).map(k=>{const x=items.filter(p=>p.tipo===k);return{k,n:x.length,h:x.filter(p=>p.hecho).length,min:x.reduce((a,p)=>a+(p.duracion||0),0)};}).filter(r=>r.n);
- const tot=items.length,hech=items.filter(p=>p.hecho).length,minTot=items.reduce((a,p)=>a+(p.duracion||0),0);
+ const res=Object.keys(TIPOS).map(k=>{const x=items.filter(p=>p.tipo===k);return{k,n:x.length,h:x.filter(hechoPlan).length,min:x.reduce((a,p)=>a+(p.duracion||0),0)};}).filter(r=>r.n);
+ const tot=items.length,hech=items.filter(hechoPlan).length,minTot=items.reduce((a,p)=>a+(p.duracion||0),0);
  const dias=[...Array(7)].map((_,i)=>addDays(lun,i));
  const chips=dias.map((f,i)=>{const its=items.filter(p=>p.fecha===f);return `<button class="daychip ${f===today()?'hoy':''}" data-act="scrollDia" data-v="${f}" aria-label="${DIAS[(i+1)%7]} ${fFecha(f)}, ${its.length} sesiones">${'LMMJVSD'[i]}<b>${parseYmd(f).getDate()}</b><span class="dots">${its.slice(0,3).map(p=>`<i style="background:${COLORS[p.tipo]}"></i>`).join('')}</span></button>`;}).join('');
  const titulo=ui.semana===0?'Esta semana':ui.semana===1?'Próxima semana':ui.semana===-1?'Semana pasada':'Semana';
@@ -732,7 +745,7 @@ function vResumen(){
  const AE=allEnt();const eC=AE.filter(e=>inR(e.fecha,ini,fin)),eP=AE.filter(e=>inR(e.fecha,pini,pfin));
  const pC=D.plan.filter(p=>inR(p.fecha,ini,fin)),pP=D.plan.filter(p=>inR(p.fecha,pini,pfin));
  const m=(a,k)=>avg(a.map(d=>d[k]));const sum=a=>a.reduce((s,e)=>s+(e.duracion||0),0);
- const cumpl=a=>a.length?a.filter(p=>p.hecho).length/a.length*100:null;
+ const cumpl=a=>a.length?a.filter(hechoPlan).length/a.length*100:null;
  const minC=sum(eC),minP=sum(eP);
  const K={kcal:[m(dC,'kcal'),m(dP,'kcal')],sue:[m(dC,'sueno_min'),m(dP,'sueno_min')],hrv:[m(dC,'hrv'),m(dP,'hrv')],fc:[m(dC,'fc_reposo'),m(dP,'fc_reposo')],cu:[cumpl(pC),cumpl(pP)]};
  const dd=(k)=>K[k][0]!=null&&K[k][1]!=null?K[k][0]-K[k][1]:null;
@@ -832,8 +845,8 @@ function vEntrenos(){
   <div class="row" style="gap:4px" aria-label="Últimos partidos">${u5.map(e=>`<span style="width:26px;height:26px;border-radius:8px;background:${e.padel.res==='G'?'var(--pa)':'#2A2E33'};color:${e.padel.res==='G'?'#0B0C0E':'var(--tx)'};font-size:12px;font-weight:800;display:flex;align-items:center;justify-content:center">${e.padel.res}</span>`).join('')}</div></div>
   <div class="g2" style="gap:8px"><div class="tile"><span class="lbl">Torneo</span><span class="num md">${tor.length?`${gt} – ${tor.length-gt}`:'—'}</span></div><div class="tile"><span class="lbl">Kcal / partido</span><span class="num md">${fN(kc,0)}</span></div></div></section>`;
  }
- const pend=WW.filter(w=>(w.min==null||w.min>=15)&&diffDays(w.fecha,today())<=14&&!D.entrenos.some(e=>e.watchId===w.id)&&(f==='todos'||adivinaTipo(w.nombre)===f)).slice(0,8);
- if(pend.length)html+=`<section class="card" style="gap:0"><div class="row between" style="padding-bottom:6px"><h2 class="disp h2">Del Apple Watch</h2><span class="xs muted">sin registrar</span></div>${pend.map(w=>`<div class="pitem"><span class="ico" style="background:var(--s2);width:40px;height:40px">${ico('watch',20,'#C9CDD3')}</span><span class="grow"><b style="font-size:14px">${esc(w.nombre)}</b><span class="xs muted">${fFecha(w.fecha)} ${esc(w.hora)}${w.min?' · '+w.min+' min':''}${w.kcal?' · '+fN(w.kcal,0)+' kcal':''}</span></span><button class="btn" data-act="agregarWatch" data-v="${esc(w.id)}" style="min-height:40px;padding:0 12px">Agregar</button></div>`).join('')}</section>`;
+ const pend=WW.filter(w=>(w.min==null||w.min>=15)&&diffDays(w.fecha,today())<=14&&!D.entrenos.some(e=>e.watchId===w.id)&&(f==='todos'||tipoWatch(w)===f)).slice(0,10);
+ if(pend.length)html+=`<section class="card" style="gap:0"><div class="row between" style="padding-bottom:6px"><h2 class="disp h2">Del Apple Watch</h2><span class="xs muted">sin registrar</span></div>${pend.map(w=>`<div class="pitem"><span class="ico" style="background:var(--s2);width:40px;height:40px">${ico('watch',20,'#C9CDD3')}</span><span class="grow"><b style="font-size:14px">${esc(nombreES(w.nombre))}</b><span class="xs muted">${fFecha(w.fecha)} ${esc(w.hora)}${w.min?' · '+w.min+' min':''}${w.kcal?' · '+fN(w.kcal,0)+' kcal':''}</span>${famW(w)==='func'?`<span class="row" style="gap:6px;margin-top:6px">${['crossfit','hyrox'].map(k=>`<button class="pill" data-act="tipoWW" data-v="${esc(w.id)}|${k}" style="border:1px solid ${tipoWatch(w)===k?COLORS[k]:'var(--ln2)'};color:${tipoWatch(w)===k?COLORS[k]:'var(--mu)'};font-weight:700;cursor:pointer;min-height:32px">${TIPOS[k]}</button>`).join('')}</span>`:`<span class="xs" style="color:${COLORS[tipoWatch(w)]||'var(--mu)'};font-weight:700">${TIPOS[tipoWatch(w)]||'Otro'}</span>`}</span><button class="btn" data-act="agregarWatch" data-v="${esc(w.id)}" style="min-height:40px;padding:0 12px">Agregar</button></div>`).join('')}<p class="xs muted" style="padding-top:8px">El Watch registra CrossFit y HYROX como “Functional Strength Training”: si la clase está en tu calendario se clasifica sola; si no, toca CrossFit o HYROX.</p></section>`;
  html+=`<section class="card" style="gap:0"><h2 class="disp h2" style="padding-bottom:6px">Historial</h2>${list.length?list.slice(0,60).map(entItem).join(''):'<p class="sm muted" style="padding:10px 0">Sin registros todavía.</p>'}</section>`;
  return html;
 }
@@ -864,7 +877,7 @@ function vCheckin(){
  <div class="g2">${campo('peso','Peso (kg)','84,0')}${campo('cintura','Cintura (cm)','86')}${campo('pecho','Pecho (cm)','Opcional')}${campo('brazo','Brazo (cm)','Opcional')}${campo('cadera','Cadera (cm)','Opcional')}${campo('muslo','Muslo (cm)','Opcional')}</div>
  <label class="f">Notas (dieta, lesiones, cómo te sientes)<textarea data-d="notas" rows="3">${esc(d.notas)}</textarea></label>
 </section>
-${fuenteWatch()?'':`<section class="card" style="flex-direction:row;align-items:center;gap:12px"><span class="ico" style="background:var(--s2);width:44px;height:44px">${ico('watch',22,'#C9CDD3')}</span><span class="grow"><b class="sm">Datos del Watch de la semana</b><span class="xs muted">${S.lastImport?'Última importación '+relTime(S.lastImport):'Aún no importas datos de Salud'}</span></span><button class="btn ${S.lastImport&&Date.now()-new Date(S.lastImport)<6*864e5?'':'pri'}" data-act="importSalud">Importar</button></section>`}
+${fuenteWatch()==='hae'?'':`<section class="card" style="flex-direction:row;align-items:center;gap:12px"><span class="ico" style="background:var(--s2);width:44px;height:44px">${ico('watch',22,'#C9CDD3')}</span><span class="grow"><b class="sm">Datos del Watch de la semana</b><span class="xs muted">${S.lastImport?'Última importación '+relTime(S.lastImport):'Aún no importas datos de Salud'}</span></span><button class="btn ${S.lastImport&&Date.now()-new Date(S.lastImport)<6*864e5?'':'pri'}" data-act="importSalud">Importar</button></section>`}
 <button class="btn pri big" data-act="guardarCheckin">${ex?'Actualizar check-in':'Guardar check-in'}</button>
 ${ex?`<section class="g2"><button class="btn lime" data-act="analizar" data-v="${d.id}" ${busy||!nf?'disabled':''}>${busy?'<span class="spin"></span>Analizando…':ico('spark',18,'#0B0C0E')+'Analizar con IA'}</button><button class="btn" data-act="compartir" data-v="${d.id}" ${nf?'':'disabled'}>${ico('share',18)}Enviar fotos</button></section>
 ${busy?'<p class="sm muted">Enviando fotos a Claude… suele tardar entre 20 y 60 segundos.</p>':''}
@@ -916,7 +929,7 @@ function vAjustes(){
  const v=k=>esc(S[k]??'');
  const tpl=`{"fecha":"⟨FechaHoy⟩","kcal_ayer":"⟨KcalAyer⟩","ejercicio_ayer":"⟨EjercicioAyer⟩","pasos_ayer":"⟨PasosAyer⟩","sueno":"⟨Sueño⟩","profundo":"⟨Profundo⟩","rem":"⟨REM⟩","nucleo":"⟨Núcleo⟩","kcal_hoy":"⟨KcalHoy⟩","hrv":"⟨HRV⟩","fc_reposo":"⟨FCReposo⟩","vo2max":"⟨VO2⟩","peso":"⟨Peso⟩"}`;
  const gid=gistIdLimpio()||'TU_ID_DEL_GIST';
- const fu=ui.fuente||(S.puenteUrl?'hae':S.gistId?'atajo':'export');
+ const fu=ui.fuente||(S.puenteUrl?'hae':S.gistId&&(S.gistSeen||[]).length?'atajo':'export');
  return `
 <header class="row between"><div style="display:flex;flex-direction:column;gap:2px"><span class="eyebrow">FORJA ${VERSION}</span><h1 class="disp h1">Ajustes</h1></div><button class="iconbtn" data-act="go" data-v="hoy" aria-label="Volver">${ico('x',20)}</button></header>
 
@@ -1111,7 +1124,7 @@ async function restaurar(file){
 
 /* ================= Eventos ================= */
 const ACT={
- go:v=>go(v), sync:()=>syncWatch(false), importSalud:()=>$('#fileSalud').click(), fuente:v=>{ui.fuente=v;render();}, agregarWatch:v=>{const w=WW.find(x=>x.id===v);if(w)modalEntreno(null,{fecha:w.fecha,tipo:adivinaTipo(w.nombre)||'crossfit',titulo:w.nombre,duracion:w.min,kcal:w.kcal,watchId:w.id});}, pegar:pegarSalud, importJson:()=>$('#fileJson').click(),
+ go:v=>go(v), sync:()=>syncWatch(false), tipoWW:async v=>{const i=v.lastIndexOf('|'),id=v.slice(0,i),t=v.slice(i+1);S.wwTipo={...(S.wwTipo||{}),[id]:t};await saveS();render();}, importSalud:()=>$('#fileSalud').click(), fuente:v=>{ui.fuente=v;render();}, agregarWatch:v=>{const w=WW.find(x=>x.id===v);if(w)modalEntreno(null,{fecha:w.fecha,tipo:tipoWatch(w)||'crossfit',titulo:TIPOS[tipoWatch(w)]||nombreES(w.nombre),duracion:w.min,kcal:w.kcal,watchId:w.id});}, pegar:pegarSalud, importJson:()=>$('#fileJson').click(),
  angulo:v=>{ui.angulo=v;render();}, filtro:v=>{ui.filtro=v;render();},
  nuevoEntreno:()=>modalEntreno(), editEntreno:v=>modalEntreno(D.entrenos.find(x=>x.id==v)),
  delEntreno:async v=>{if(confirm('¿Eliminar este entreno?')){await dbDel('entrenos',Number(v));for(const p of D.plan.filter(p=>p.hecho==v)){delete p.hecho;await dbPut('plan',p);}closeModal();await refresh();}},
@@ -1166,6 +1179,7 @@ window.addEventListener('scroll',()=>tip.classList.remove('show'),{passive:true}
 (async()=>{
  try{
   db=await openDB();S={...DEF,...(await dbGet('kv','settings')||{})};WW=(await dbGet('kv','watchWorkouts'))||[];await loadAll();
+  if(S.gistId&&!(S.gistSeen||[]).length&&!S.lastSync){S.gistId='';await saveS();}
   if(!S.seedPlan){if(!D.plan.length){await dbPut('plan',{fecha:'2026-10-20',hora:'18:00',tipo:'crossfit',titulo:'CrossFit',duracion:60});await dbPut('plan',{fecha:'2026-10-20',hora:'19:30',tipo:'padel',titulo:'Pádel',duracion:90});}S.seedPlan=true;await saveS();await loadAll();}
   go('hoy');
   if(navigator.storage&&navigator.storage.persist)navigator.storage.persist().catch(()=>{});
