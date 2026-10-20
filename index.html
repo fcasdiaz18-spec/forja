@@ -1,0 +1,742 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0B0C0E">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="FORJA">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" type="image/png" href="icon-192.png">
+<link rel="manifest" href="manifest.webmanifest">
+<title>FORJA</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0B0C0E;--s1:#15171A;--s2:#1D2024;--ln:#24272C;--ln2:#2A2E33;--tx:#F2F3F5;--mu:#9AA0A8;--cf:#FF6B1A;--hy:#6FA8FF;--pa:#C6F432;--bad:#FF8A80;--disp:'Barlow Condensed','Arial Narrow',sans-serif}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;background:var(--bg);color:var(--tx);font-family:Inter,system-ui,-apple-system,sans-serif;-webkit-text-size-adjust:100%}
+body{min-height:100vh;overscroll-behavior-y:none}
+#view{max-width:520px;margin:0 auto;padding:calc(env(safe-area-inset-top) + 18px) 16px calc(env(safe-area-inset-bottom) + 112px);display:flex;flex-direction:column;gap:16px}
+h1,h2,h3,p{margin:0}
+.disp{font-family:var(--disp);font-weight:800;text-transform:uppercase;line-height:1;letter-spacing:.01em}
+.h1{font-size:clamp(30px,9.5vw,40px)}
+header{gap:12px}header>div{min-width:0}.h2{font-size:22px;font-weight:700}
+.eyebrow{font-size:12px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--mu)}
+.card{background:var(--s1);border:1px solid var(--ln);border-radius:22px;padding:18px;display:flex;flex-direction:column;gap:14px}
+.tile{background:var(--s2);border-radius:14px;padding:12px;display:flex;flex-direction:column;gap:4px;min-width:0}
+.card.tile{background:var(--s1)}
+.lbl{font-size:11px;color:var(--mu);text-transform:uppercase;letter-spacing:.08em;font-weight:600}
+.num{font-family:var(--disp);font-weight:800;font-size:34px;line-height:1}
+.num.md{font-size:26px;font-weight:700}
+.num small{font-size:15px;color:var(--mu);font-weight:600}
+.g2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.g3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.row{display:flex;align-items:center;gap:10px}
+.between{justify-content:space-between}
+.wrap{flex-wrap:wrap}
+.stack{display:flex;flex-direction:column;gap:14px}
+.grow{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}
+.sm{font-size:13px;line-height:1.45}.xs{font-size:12px}
+.muted{color:var(--mu)}
+.up{color:var(--pa)}.down{color:var(--bad)}
+.btn{min-height:44px;padding:0 16px;border-radius:14px;border:1px solid var(--ln2);background:var(--s2);color:var(--tx);font:600 14px Inter,system-ui,sans-serif;display:inline-flex;align-items:center;justify-content:center;gap:8px;cursor:pointer;text-decoration:none;white-space:nowrap;flex-shrink:0}
+.btn.pri{background:var(--cf);border-color:var(--cf);color:#0B0C0E;font-weight:700}
+.btn.lime{background:var(--pa);border-color:var(--pa);color:#0B0C0E;font-weight:700}
+.btn.ghost{background:transparent}
+.btn.big{min-height:54px;font-family:var(--disp);font-size:20px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;width:100%}
+.btn.danger{color:var(--bad)}
+.btn:disabled{opacity:.45}
+.iconbtn{width:46px;height:46px;border-radius:50%;border:2px solid var(--cf);background:var(--s1);color:var(--tx);display:flex;align-items:center;justify-content:center;cursor:pointer}
+.pill{font-size:12px;color:var(--mu);background:var(--s2);border-radius:999px;padding:6px 10px;display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+label.f{display:flex;flex-direction:column;gap:6px;font-size:12px;font-weight:600;color:var(--mu)}
+input,select,textarea{width:100%;min-height:48px;border-radius:12px;border:1px solid var(--ln2);background:var(--s1);color:var(--tx);padding:0 12px;font:500 16px Inter,system-ui,sans-serif;-webkit-appearance:none;appearance:none}
+input[type=date]{min-width:0}
+select{background-image:linear-gradient(45deg,transparent 50%,var(--mu) 50%),linear-gradient(135deg,var(--mu) 50%,transparent 50%);background-position:calc(100% - 18px) 21px,calc(100% - 13px) 21px;background-size:5px 5px;background-repeat:no-repeat;padding-right:32px}
+textarea{padding:12px;min-height:84px;resize:vertical}
+input:focus,select:focus,textarea:focus{outline:2px solid var(--cf);outline-offset:1px}
+.card input,.card select,.card textarea{background:var(--s2)}
+.tabbar{position:fixed;left:12px;right:12px;bottom:calc(env(safe-area-inset-bottom) + 10px);max-width:496px;margin:0 auto;background:rgba(21,23,26,.94);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);border:1px solid var(--ln);border-radius:26px;padding:6px;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:4px;z-index:10}
+.tabbar button{background:none;border:0;color:var(--mu);display:flex;flex-direction:column;align-items:center;gap:3px;padding:9px 0;border-radius:20px;font:600 11px Inter,system-ui,sans-serif;cursor:pointer}
+.tabbar button.on{background:var(--s2);color:var(--cf);font-weight:700}
+.seg{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);gap:4px;background:var(--s1);border:1px solid var(--ln);border-radius:14px;padding:4px}
+.seg button{min-height:40px;border:0;border-radius:10px;background:transparent;color:var(--mu);font:600 13px Inter,system-ui,sans-serif;cursor:pointer}
+.seg button.on{background:var(--tx);color:var(--bg)}
+.photo{aspect-ratio:3/4;border-radius:18px;background:var(--s1);border:1px dashed #3A3F46;overflow:hidden;position:relative;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:8px;color:var(--mu);cursor:pointer;text-align:center;padding:8px}
+.photo.has{border:1px solid var(--cf)}
+.photo img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.badge{position:absolute;top:10px;left:10px;font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;background:var(--bg);color:var(--mu);border-radius:999px;padding:5px 9px;z-index:1}
+.badge.on{background:var(--cf);color:#0B0C0E}
+.bar{height:6px;background:var(--ln);border-radius:99px;overflow:hidden}.bar>i{display:block;height:100%;border-radius:99px}
+.item{width:100%;display:flex;align-items:center;gap:12px;padding:12px 0;border:0;border-top:1px solid var(--ln);background:none;color:var(--tx);text-align:left;font:inherit;cursor:pointer}
+.item:first-child{border-top:0}
+.item b{font-size:15px;font-weight:700}
+.ico{width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.mtable .r{display:grid;grid-template-columns:1fr 70px 64px;align-items:center;padding:11px 0;border-top:1px solid var(--ln);font-size:14px}
+.mtable .r b{font-family:var(--disp);font-size:20px;text-align:right}
+.mtable .r span:last-child{text-align:right;font-weight:700;font-size:12px}
+.light{background:var(--tx);color:var(--bg);border-radius:22px;padding:18px;display:flex;justify-content:space-between;align-items:center;gap:12px}
+.light .muted{color:#4A4F57}
+.ul{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:6px;font-size:14px;line-height:1.45}
+details{background:var(--s2);border-radius:14px;padding:0 14px}
+details summary{min-height:48px;display:flex;align-items:center;font-weight:700;font-size:14px;cursor:pointer;list-style:none}
+details summary::-webkit-details-marker{display:none}
+details[open]{padding-bottom:14px}
+details ol{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:10px;font-size:14px;line-height:1.5}
+pre{background:var(--bg);border:1px solid var(--ln2);border-radius:12px;padding:12px;margin:8px 0 0;white-space:pre-wrap;word-break:break-all;font:12px/1.5 ui-monospace,Menlo,monospace;color:#C9CDD3}
+code{font:13px ui-monospace,Menlo,monospace;background:var(--bg);padding:2px 5px;border-radius:6px;color:#E6E8EB;word-break:break-all}
+a{color:var(--hy)}
+dialog{width:100%;max-width:520px;max-height:92vh;margin:auto auto 0;border:0;border-radius:24px 24px 0 0;background:var(--s1);color:var(--tx);padding:20px 16px calc(env(safe-area-inset-bottom) + 20px);overflow:auto}
+dialog::backdrop{background:rgba(0,0,0,.65)}
+#toast{position:fixed;left:50%;top:calc(env(safe-area-inset-top) + 10px);transform:translate(-50%,-160%);background:var(--tx);color:var(--bg);padding:12px 16px;border-radius:14px;font-weight:600;font-size:14px;transition:transform .25s;z-index:60;max-width:90vw;text-align:center}
+#toast.show{transform:translate(-50%,0)}
+.spin{width:18px;height:18px;border-radius:50%;border:2.5px solid currentColor;border-right-color:transparent;animation:sp 0.8s linear infinite;display:inline-block}
+@keyframes sp{to{transform:rotate(360deg)}}
+.empty{text-align:center;padding:28px 18px;align-items:center}
+[hidden]{display:none!important}
+</style>
+</head>
+<body>
+<main id="view"><p class="muted">Cargando FORJA…</p></main>
+
+<nav class="tabbar" aria-label="Navegación principal">
+<button data-act="go" data-v="hoy"><svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L4 14h7l-1 8 9-12h-7z"/></svg>Hoy</button>
+<button data-act="go" data-v="cuerpo"><svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="5" r="2.5"/><path d="M5 9h14M12 9v6M9 22l3-7 3 7"/></svg>Cuerpo</button>
+<button data-act="go" data-v="entrenos"><svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 20h18M6 16V10M12 16V4M18 16v-8"/></svg>Entrenos</button>
+<button data-act="go" data-v="checkin"><svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h3l2-3h6l2 3h3v12H4z"/><circle cx="12" cy="13" r="3.5"/></svg>Check-in</button>
+</nav>
+
+<dialog id="modal" aria-label="Formulario"><div id="modalBody"></div></dialog>
+<div id="toast" role="status" aria-live="polite"></div>
+<input type="file" id="fileJson" accept=".json,application/json,text/plain" hidden>
+<input type="file" id="fileBackup" accept=".json,application/json" hidden>
+
+<script>
+'use strict';
+/* ================= Constantes ================= */
+const VERSION='1.0';
+const COLORS={crossfit:'#FF6B1A',hyrox:'#6FA8FF',padel:'#C6F432'};
+const TIPOS={crossfit:'CrossFit',hyrox:'HYROX',padel:'Pádel'};
+const ANGULOS=[['frente','Frente'],['perfil','Perfil'],['espalda','Espalda']];
+const ESTACIONES=['SkiErg 1.000 m','Sled Push','Sled Pull','Burpee Broad Jump','Remo 1.000 m','Farmers Carry','Sandbag Lunges','Wall Balls'];
+const MEDIDAS=[['cintura','Cintura (ombligo)',-1],['pecho','Pecho',1],['cadera','Cadera',-1],['brazo','Brazo (contraído)',1],['muslo','Muslo',1]];
+const MODELOS=[['claude-sonnet-5-5','Claude Sonnet 5.5 · recomendado'],['claude-opus-5-5','Claude Opus 5.5 · más preciso'],['claude-haiku-5-5','Claude Haiku 5.5 · más económico']];
+const DEF={nombre:'Felipe',metaPeso:'',metaKcal:900,compNombre:'',compFecha:'',gistId:'',gistSeen:[],lastSync:'',lastRaw:'',apiKey:'',modelo:'claude-sonnet-5-5'};
+const MESES=['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+const DIAS=['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
+const ICON={
+ crossfit:'<path d="M6.5 6.5v11M17.5 6.5v11M3 9v6M21 9v6M6.5 12h11"/>',
+ hyrox:'<circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2.5M9 2h6"/>',
+ padel:'<circle cx="10" cy="9" r="6"/><path d="M14.5 13.5L21 20"/>',
+ cam:'<path d="M4 8h3l2-3h6l2 3h3v12H4z"/><circle cx="12" cy="13" r="3.5"/>',
+ gear:'<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/>',
+ sync:'<path d="M21 12a9 9 0 0 1-15.5 6.2M3 12A9 9 0 0 1 18.5 5.8M18 2v4h-4M6 22v-4h4"/>',
+ watch:'<rect x="6" y="6" width="12" height="12" rx="3"/><path d="M9 6V2h6v4M9 18v4h6v-4"/>',
+ chev:'<path d="M9 6l6 6-6 6"/>',
+ check:'<path d="M20 6L9 17l-5-5"/>',
+ plus:'<path d="M12 5v14M5 12h14"/>',
+ share:'<path d="M12 3v12M7 8l5-5 5 5M5 13v7h14v-7"/>',
+ spark:'<path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/>',
+ x:'<path d="M6 6l12 12M18 6L6 18"/>'
+};
+const ico=(n,s=22,c='currentColor',w=2)=>`<svg aria-hidden="true" width="${s}" height="${s}" viewBox="0 0 24 24" fill="none" stroke="${c}" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round">${ICON[n]}</svg>`;
+
+/* ================= Utilidades ================= */
+const $=(s,r=document)=>r.querySelector(s);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const pad=n=>String(n).padStart(2,'0');
+const ymd=d=>`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+const parseYmd=s=>{const [y,m,d]=s.split('-').map(Number);return new Date(y,m-1,d);};
+const addDays=(s,n)=>{const d=parseYmd(s);d.setDate(d.getDate()+n);return ymd(d);};
+const today=()=>ymd(new Date());
+const diffDays=(a,b)=>Math.round((parseYmd(b)-parseYmd(a))/864e5);
+const fFecha=s=>{if(!s)return'—';const d=parseYmd(s);return `${d.getDate()} ${MESES[d.getMonth()]}`;};
+const fN=(n,dec=1)=>n==null||isNaN(n)?'—':Number(n).toLocaleString('es-CL',{maximumFractionDigits:dec});
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const avg=a=>{const v=a.filter(x=>x!=null&&!isNaN(x));return v.length?v.reduce((s,x)=>s+x,0)/v.length:null;};
+const rng=(v,a,b)=>v==null||v<a||v>b?null:v;
+function parseNum(v){
+ if(v==null||v==='')return null;
+ if(typeof v==='number')return isFinite(v)?v:null;
+ let s=String(v).trim().replace(/\s/g,'').replace(/[^\d,.\-]/g,'');
+ if(!s||s==='-')return null;
+ if(s.includes(','))s=s.replace(/\./g,'').replace(',','.');
+ else if(/^-?\d{1,3}(\.\d{3})+$/.test(s))s=s.replace(/\./g,'');
+ const n=parseFloat(s);return isFinite(n)?n:null;
+}
+function parseDur(v){ // devuelve minutos
+ if(v==null||v==='')return null;
+ const s=String(v).toLowerCase();
+ const h=s.match(/(\d+[.,]?\d*)\s*h/), m=s.match(/(\d+)\s*min/);
+ if(h||m)return (h?parseNum(h[1])*60:0)+(m?parseInt(m[1],10):0);
+ if(/\d+:\d+/.test(s)){const p=s.match(/[\d:]+/)[0].split(':').map(Number);return p.length===3?p[0]*60+p[1]+p[2]/60:p[0]*60+p[1];}
+ const n=parseNum(v);if(n==null)return null;
+ if(n>1440)return n/60; if(n<=24)return n*60; return n;
+}
+function parseTime(s){if(!s)return null;const p=String(s).trim().replace(/[.,;' ]/g,':').split(':').map(x=>parseInt(x,10));if(!p.length||p.some(isNaN))return null;return p.reduce((a,x)=>a*60+x,0);}
+function fTime(sec){if(sec==null)return'—';sec=Math.round(sec);const h=Math.floor(sec/3600),m=Math.floor(sec%3600/60),s=sec%60;return h?`${h}:${pad(m)}:${pad(s)}`:`${m}:${pad(s)}`;}
+function fDur(min){if(min==null)return'—';const h=Math.floor(min/60),m=Math.round(min%60);return `${h}:${pad(m)}`;}
+function normFecha(s){if(!s)return null;s=String(s).trim();let m=s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);if(m)return `${m[1]}-${pad(m[2])}-${pad(m[3])}`;m=s.match(/^(\d{1,2})[-\/.](\d{1,2})[-\/.](\d{4})/);if(m)return `${m[3]}-${pad(m[2])}-${pad(m[1])}`;return null;}
+function relTime(iso){if(!iso)return'nunca';const m=Math.round((Date.now()-new Date(iso))/6e4);if(m<1)return'recién';if(m<60)return`hace ${m} min`;const h=Math.round(m/60);if(h<24)return`hace ${h} h`;return`hace ${Math.round(h/24)} días`;}
+function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('show');clearTimeout(t._h);t._h=setTimeout(()=>t.classList.remove('show'),2800);}
+const urls=new WeakMap();
+function photoURL(b){if(!b)return null;if(!urls.has(b))urls.set(b,URL.createObjectURL(b));return urls.get(b);}
+function loadImg(blob){return new Promise((res,rej)=>{const u=URL.createObjectURL(blob);const i=new Image();i.onload=()=>{res(i);URL.revokeObjectURL(u);};i.onerror=()=>{URL.revokeObjectURL(u);rej(new Error('No se pudo leer la imagen'));};i.src=u;});}
+async function compress(blob,max=1400,q=.82){const img=await loadImg(blob);const sc=Math.min(1,max/Math.max(img.naturalWidth,img.naturalHeight));const c=document.createElement('canvas');c.width=Math.round(img.naturalWidth*sc);c.height=Math.round(img.naturalHeight*sc);c.getContext('2d').drawImage(img,0,0,c.width,c.height);return new Promise(r=>c.toBlob(r,'image/jpeg',q));}
+async function toB64(blob,max=1024){const b=await compress(blob,max,.8);const bytes=new Uint8Array(await b.arrayBuffer());let s='';for(let i=0;i<bytes.length;i+=0x8000)s+=String.fromCharCode.apply(null,bytes.subarray(i,i+0x8000));return btoa(s);}
+const blobToData=b=>new Promise(r=>{const fr=new FileReader();fr.onload=()=>r(fr.result);fr.readAsDataURL(b);});
+
+/* ================= Base de datos (IndexedDB) ================= */
+let db;
+function openDB(){return new Promise((res,rej)=>{const r=indexedDB.open('forja',1);r.onupgradeneeded=()=>{const d=r.result;d.createObjectStore('dias',{keyPath:'fecha'});d.createObjectStore('checkins',{keyPath:'id'});d.createObjectStore('entrenos',{keyPath:'id',autoIncrement:true});d.createObjectStore('prs',{keyPath:'id',autoIncrement:true});d.createObjectStore('kv');};r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error);});}
+const st=(n,m='readonly')=>db.transaction(n,m).objectStore(n);
+const rq=r=>new Promise((res,rej)=>{r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error);});
+const dbAll=n=>rq(st(n).getAll());
+const dbGet=(n,k)=>rq(st(n).get(k));
+const dbPut=(n,v,k)=>rq(k===undefined?st(n,'readwrite').put(v):st(n,'readwrite').put(v,k));
+const dbDel=(n,k)=>rq(st(n,'readwrite').delete(k));
+const dbClear=n=>rq(st(n,'readwrite').clear());
+
+let S={...DEF};
+const D={dias:[],checkins:[],entrenos:[],prs:[]};
+let view='hoy';
+const ui={angulo:'frente',cmpA:null,cmpB:null,filtro:'todos',draft:null,analizando:null,sincronizando:false};
+async function loadAll(){
+ for(const k of Object.keys(D))D[k]=await dbAll(k);
+ D.dias.sort((a,b)=>a.fecha<b.fecha?-1:1);
+ D.checkins.sort((a,b)=>a.id<b.id?-1:1);
+ D.entrenos.sort((a,b)=>b.fecha.localeCompare(a.fecha)||b.id-a.id);
+ D.prs.sort((a,b)=>(b.fecha||'').localeCompare(a.fecha||'')||b.id-a.id);
+}
+const saveS=()=>dbPut('kv',S,'settings');
+async function refresh(){await loadAll();render();}
+
+/* ================= Datos del Apple Watch ================= */
+async function mergeDia(fecha,vals){
+ const clean=Object.fromEntries(Object.entries(vals).filter(([,v])=>v!=null&&!isNaN(v)));
+ if(!Object.keys(clean).length)return 0;
+ const ex=await dbGet('dias',fecha)||{fecha};
+ await dbPut('dias',{...ex,...clean});return 1;
+}
+async function importSalud(o){
+ if(Array.isArray(o)){let n=0;for(const x of o)n+=await importSalud(x);return n;}
+ if(o&&Array.isArray(o.dias))return importSalud(o.dias);
+ if(!o||typeof o!=='object'||!Object.keys(o).length)return 0;
+ S.lastRaw=JSON.stringify(o).slice(0,2000);
+ const f=normFecha(o.fecha)||today(), ay=addDays(f,-1);
+ let gr=parseNum(o.grasa);if(gr!=null&&gr<=1)gr*=100;
+ let n=0;
+ n+=await mergeDia(ay,{kcal:rng(parseNum(o.kcal_ayer),0,15000),ejercicio:rng(parseNum(o.ejercicio_ayer),0,1440),pasos:rng(parseNum(o.pasos_ayer),0,150000)});
+ n+=await mergeDia(f,{
+  kcal:rng(parseNum(o.kcal??o.kcal_hoy),0,15000),ejercicio:rng(parseNum(o.ejercicio??o.ejercicio_hoy),0,1440),pasos:rng(parseNum(o.pasos??o.pasos_hoy),0,150000),
+  sueno_min:rng(parseDur(o.sueno??o.sueno_min),0,1100),hrv:rng(parseNum(o.hrv),5,300),fc_reposo:rng(parseNum(o.fc_reposo),25,130),
+  vo2max:rng(parseNum(o.vo2max),15,95),peso:rng(parseNum(o.peso),30,250),grasa:rng(gr,2,60)});
+ return n;
+}
+function gistIdLimpio(){return (S.gistId||'').trim().replace(/\/+$/,'').split('/').pop().split('#')[0];}
+async function syncGist(silent){
+ const id=gistIdLimpio();
+ if(!id){if(!silent){toast('Configura el ID del Gist en Ajustes');go('ajustes');}return;}
+ if(ui.sincronizando)return; ui.sincronizando=true; if(!silent)render();
+ try{
+  const H={headers:{Accept:'application/vnd.github+json'},cache:'no-store'};
+  const r=await fetch(`https://api.github.com/gists/${id}/commits?per_page=30`,H);
+  if(!r.ok)throw new Error(r.status===404?'Gist no encontrado: revisa el ID':r.status===403||r.status===429?'Límite de GitHub alcanzado, intenta en una hora':'Error de GitHub '+r.status);
+  const commits=await r.json();const seen=new Set(S.gistSeen||[]);
+  const nuevos=commits.filter(c=>!seen.has(c.version)).slice(0,20).reverse();
+  let n=0;
+  for(const c of nuevos){
+   const rr=await fetch(`https://api.github.com/gists/${id}/${c.version}`,H);if(!rr.ok)continue;
+   const g=await rr.json();const files=g.files||{};const f=files['salud.json']||Object.values(files)[0];
+   if(f){let txt=f.content;if(f.truncated)txt=await(await fetch(f.raw_url)).text();
+    try{n+=await importSalud(JSON.parse(txt));}catch(e){console.warn('Revisión con JSON inválido',c.version,e);S.lastRaw='JSON inválido: '+String(txt).slice(0,600);}}
+   seen.add(c.version);
+  }
+  S.gistSeen=[...seen].slice(-300);S.lastSync=new Date().toISOString();await saveS();
+  if(!silent||n)toast(n?`Watch sincronizado · ${n} registro(s) nuevos`:'Todo al día');
+ }catch(e){if(!silent)toast(e.message);console.warn(e);}
+ finally{ui.sincronizando=false;await refresh();}
+}
+function autoSync(){if(!gistIdLimpio())return;if(S.lastSync&&Date.now()-new Date(S.lastSync)<10*6e4)return;syncGist(true);}
+async function importarTexto(txt){
+ let o;try{o=JSON.parse(String(txt).trim());}catch(e){throw new Error('El texto no es un JSON válido');}
+ const n=await importSalud(o);await saveS();await refresh();toast(n?'Datos del Watch importados':'No encontré datos en el JSON');
+}
+async function pegarSalud(){
+ try{const t=await navigator.clipboard.readText();if(t&&t.trim().startsWith('{')||t&&t.trim().startsWith('[')){await importarTexto(t);return;}}catch(e){}
+ openModal(`<form data-form="pegar" class="stack"><div class="row between"><h2 class="disp h2">Pegar datos del Watch</h2><button type="button" class="btn ghost" data-act="cerrar" aria-label="Cerrar">${ico('x',18)}</button></div>
+ <label class="f">JSON copiado por el Atajo<textarea name="txt" rows="6" placeholder='{"fecha":"2026-10-20", ...}'></textarea></label>
+ <button class="btn pri big" type="submit">Importar</button></form>`);
+}
+
+/* ================= Cálculos ================= */
+function latest(field,maxAge=9999){for(let i=D.dias.length-1;i>=0;i--){const d=D.dias[i];if(d[field]!=null&&diffDays(d.fecha,today())<=maxAge)return d;}return null;}
+function recovery(){
+ const t=today();const cand=D.dias.filter(d=>diffDays(d.fecha,t)<=1&&(d.hrv!=null||d.sueno_min!=null));const d=cand[cand.length-1];if(!d)return null;
+ const base=D.dias.filter(x=>x.fecha<d.fecha&&diffDays(x.fecha,d.fecha)<=7);
+ const bh=avg(base.map(x=>x.hrv)),br=avg(base.map(x=>x.fc_reposo));
+ let s=62;const notas=[];
+ if(d.hrv!=null&&bh){const r=d.hrv/bh-1;s+=clamp(r/.25,-1,1)*22;notas.push(`HRV ${r>=0?'+':''}${fN(r*100,0)}% vs tu media de 7 días`);}
+ if(d.fc_reposo!=null&&br){const r=d.fc_reposo-br;s-=clamp(r/6,-1,1)*14;notas.push(`pulso en reposo ${r>0?'+':''}${fN(r,0)} lpm`);}
+ if(d.sueno_min!=null){s+=clamp((d.sueno_min/60-7)/1.5,-1,1)*14;notas.push(`${fDur(d.sueno_min)} h de sueño`);}
+ s=Math.round(clamp(s,1,100));
+ const txt=s>=75?'Listo para cargar fuerte':s>=55?'Día de trabajo moderado':'Prioriza recuperación';
+ return {s,txt,d,notas,conBase:!!bh};
+}
+function pesoSerie(){const m=new Map();D.dias.forEach(d=>{if(d.peso!=null)m.set(d.fecha,d.peso);});D.checkins.forEach(c=>{if(c.peso!=null)m.set(c.id,c.peso);});return[...m.entries()].sort((a,b)=>a[0]<b[0]?-1:1).slice(-150);}
+function grasaDe(c){const a=c?.analisis;return a&&a.grasa_min!=null&&a.grasa_max!=null?(Number(a.grasa_min)+Number(a.grasa_max))/2:null;}
+function deltaHtml(d,dir,unit='',dec=1){if(d==null||isNaN(d))return'';const r=Math.round(d*10**dec)/10**dec;if(r===0)return`<span class="xs muted" style="font-weight:600">= sin cambio</span>`;const good=r*dir>0;return`<span class="xs ${good?'up':'down'}" style="font-weight:700">${r>0?'▲':'▼'} ${fN(Math.abs(r),dec)}${unit}</span>`;}
+function semanaLunes(){const d=new Date();return addDays(today(),-((d.getDay()+6)%7));}
+
+/* ================= Vistas ================= */
+function go(v){view=v;document.querySelectorAll('.tabbar button').forEach(b=>b.classList.toggle('on',b.dataset.v===v));if(v==='checkin'&&!ui.draft)loadDraft();render();window.scrollTo(0,0);}
+function render(){const f={hoy:vHoy,cuerpo:vCuerpo,entrenos:vEntrenos,checkin:vCheckin,ajustes:vAjustes}[view];$('#view').innerHTML=f();}
+
+function entItem(e){
+ const sub=[fFecha(e.fecha),e.duracion?fN(e.duracion,0)+' min':null,e.kcal?fN(e.kcal,0)+' kcal':null,
+  e.tipo==='padel'&&e.padel?.res?(e.padel.res==='G'?'Ganado':'Perdido')+(e.padel.marcador?' '+e.padel.marcador:''):null,
+  e.tipo==='hyrox'&&e.hyrox?.total?fTime(e.hyrox.total):null].filter(Boolean).join(' · ');
+ return `<button class="item" data-act="editEntreno" data-v="${e.id}"><span class="ico" style="background:${COLORS[e.tipo]}">${ico(e.tipo,24,'#0B0C0E',2.3)}</span><span class="grow"><b>${esc(e.titulo||TIPOS[e.tipo])}</b><span class="sm muted">${esc(sub)}</span></span>${ico('chev',18,'#9AA0A8')}</button>`;
+}
+
+function vHoy(){
+ const now=new Date();const rec=recovery();
+ const dk=latest('kcal',3),de=latest('ejercicio',3),dv=latest('vo2max',45);
+ const ps=pesoSerie();const pesoAct=ps.length?ps[ps.length-1]:null;
+ const meta=Number(parseNum(S.metaKcal))||900;
+ const cuando=f=>f===today()?'hoy':f===addDays(today(),-1)?'ayer':fFecha(f);
+ let vo2d='';if(dv){const old=[...D.dias].reverse().find(x=>x.vo2max!=null&&diffDays(x.fecha,dv.fecha)>=25);if(old)vo2d=deltaHtml(dv.vo2max-old.vo2max,1,'')+'<span class="xs muted"> en 30 días</span>';}
+ const C=326.73;
+ const ring=rec?`<svg role="img" aria-label="Recuperación ${rec.s} de 100" width="128" height="128" viewBox="0 0 128 128"><circle cx="64" cy="64" r="52" fill="none" stroke="#24272C" stroke-width="12"/><circle cx="64" cy="64" r="52" fill="none" stroke="var(--cf)" stroke-width="12" stroke-linecap="round" stroke-dasharray="${C}" stroke-dashoffset="${(C*(1-rec.s/100)).toFixed(1)}" transform="rotate(-90 64 64)"/></svg>`
+  :`<svg aria-hidden="true" width="128" height="128" viewBox="0 0 128 128"><circle cx="64" cy="64" r="52" fill="none" stroke="#24272C" stroke-width="12"/></svg>`;
+ // carga semanal
+ const lun=semanaLunes();let totalMin=0;const dias=[];
+ for(let i=0;i<7;i++){const f=addDays(lun,i);const es=D.entrenos.filter(e=>e.fecha===f);const m={crossfit:0,hyrox:0,padel:0};es.forEach(e=>{m[e.tipo]+=e.duracion||0;});const t=m.crossfit+m.hyrox+m.padel;totalMin+=t;dias.push({l:'LMMJVSD'[i],m,t,hoy:f===today()});}
+ const mx=Math.max(60,...dias.map(d=>d.t));
+ const bars=dias.map(d=>`<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:8px"><div style="width:100%;height:116px;display:flex;flex-direction:column;justify-content:flex-end;gap:2px">${['padel','hyrox','crossfit'].filter(k=>d.m[k]).map(k=>`<div style="height:${Math.max(4,d.m[k]/mx*116).toFixed(0)}px;background:${COLORS[k]};border-radius:4px"></div>`).join('')||'<div style="height:4px;background:#24272C;border-radius:4px"></div>'}</div><span class="xs" style="font-weight:700;color:${d.hoy?'var(--tx)':'var(--mu)'}">${d.l}</span></div>`).join('');
+ const comp=S.compNombre&&S.compFecha?diffDays(today(),S.compFecha):null;
+ const ult=D.entrenos.slice(0,3);
+ return `
+<header class="row between">
+ <div style="display:flex;flex-direction:column;gap:2px"><span class="eyebrow">${DIAS[now.getDay()]} ${now.getDate()} ${MESES[now.getMonth()]}</span><h1 class="disp h1">Vamos, ${esc(S.nombre||'campeón')}</h1></div>
+ <button class="iconbtn" data-act="go" data-v="ajustes" aria-label="Ajustes">${ico('gear',22)}</button>
+</header>
+
+<section class="card" style="padding:12px 14px;flex-direction:row;align-items:center;gap:12px">
+ <span class="ico" style="background:var(--s2);width:40px;height:40px">${ico('watch',20,'#C9CDD3')}</span>
+ <span class="grow"><b class="sm">Apple Watch</b><span class="xs muted">${gistIdLimpio()?'Sincronizado '+relTime(S.lastSync):'Sin configurar · toca Ajustes'}</span></span>
+ ${gistIdLimpio()?`<button class="btn" data-act="sync" ${ui.sincronizando?'disabled':''} aria-label="Sincronizar">${ui.sincronizando?'<span class="spin"></span>':ico('sync',18)}</button>`:''}
+ <button class="btn" data-act="pegar">Pegar</button>
+</section>
+
+<section class="card">
+ <div class="row between"><span class="eyebrow">Recuperación</span><span class="pill">${ico('watch',14,'#9AA0A8')}${rec?fFecha(rec.d.fecha):'sin datos'}</span></div>
+ <div class="row" style="gap:18px">
+  <div style="position:relative;width:128px;height:128px;flex-shrink:0">${ring}<div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center"><span class="num" style="font-size:46px">${rec?rec.s:'—'}</span><span class="xs muted" style="letter-spacing:.08em;text-transform:uppercase">de 100</span></div></div>
+  <div style="display:flex;flex-direction:column;gap:6px;min-width:0"><span class="disp" style="font-size:25px;font-weight:700;line-height:1.05">${rec?rec.txt:'Sin datos del Watch'}</span><span class="sm muted">${rec?esc(rec.notas.join(' · '))+(rec.conBase?'':' · se afina con 7 días de datos'):'Configura el Atajo de Salud en Ajustes o pega el JSON.'}</span></div>
+ </div>
+ <div class="g3">
+  <div class="tile"><span class="lbl">HRV</span><span class="num md">${fN(rec?.d.hrv,0)}<small> ms</small></span></div>
+  <div class="tile"><span class="lbl">FC reposo</span><span class="num md">${fN(rec?.d.fc_reposo,0)}<small> lpm</small></span></div>
+  <div class="tile"><span class="lbl">Sueño</span><span class="num md">${rec?.d.sueno_min!=null?fDur(rec.d.sueno_min):'—'}<small> h</small></span></div>
+ </div>
+ <p class="xs muted">Índice propio de FORJA: compara tu HRV, pulso en reposo y sueño contra tu propia media.</p>
+</section>
+
+<section class="g2">
+ <div class="card tile" style="padding:16px;gap:10px"><span class="lbl">Kcal activas${dk?' · '+cuando(dk.fecha):''}</span><span class="num">${fN(dk?.kcal,0)}<small> / ${fN(meta,0)}</small></span><div class="bar" style="height:8px"><i style="width:${dk?clamp(dk.kcal/meta*100,0,100):0}%;background:var(--cf)"></i></div></div>
+ <div class="card tile" style="padding:16px;gap:10px"><span class="lbl">VO₂ máx</span><span class="num">${fN(dv?.vo2max)}</span><span>${vo2d}</span></div>
+ <div class="card tile" style="padding:16px;gap:10px"><span class="lbl">Ejercicio${de?' · '+cuando(de.fecha):''}</span><span class="num">${fN(de?.ejercicio,0)}<small> min</small></span></div>
+ <div class="card tile" style="padding:16px;gap:10px"><span class="lbl">Peso${pesoAct?' · '+fFecha(pesoAct[0]):''}</span><span class="num">${fN(pesoAct?.[1])}<small> kg</small></span></div>
+</section>
+
+<section class="card">
+ <div class="row between"><h2 class="disp h2">Carga de la semana</h2><span class="sm muted" style="white-space:nowrap">${Math.floor(totalMin/60)} h ${pad(Math.round(totalMin%60))} min</span></div>
+ <div style="display:flex;align-items:flex-end;gap:10px">${bars}</div>
+ <div class="row wrap xs" style="gap:16px;color:#C9CDD3">${Object.keys(TIPOS).map(k=>`<span class="row" style="gap:6px"><span style="width:10px;height:10px;border-radius:3px;background:${COLORS[k]}"></span>${TIPOS[k]}</span>`).join('')}</div>
+</section>
+
+<section class="card" style="gap:0">
+ <div class="row between" style="padding-bottom:6px"><h2 class="disp h2">Últimos entrenos</h2><button class="btn pri" data-act="nuevoEntreno">${ico('plus',16,'#0B0C0E',2.6)}Registrar</button></div>
+ ${ult.length?ult.map(entItem).join(''):'<p class="sm muted" style="padding:10px 0">Aún no registras entrenos. Partamos hoy.</p>'}
+</section>
+
+${comp!=null&&comp>=0?`<section class="light"><div style="display:flex;flex-direction:column;gap:4px;min-width:0"><span class="xs muted" style="font-weight:700;letter-spacing:.12em;text-transform:uppercase">Próxima competencia</span><span class="disp" style="font-size:26px;line-height:1.05">${esc(S.compNombre)}</span><span class="sm muted">${fFecha(S.compFecha)}</span></div><div style="display:flex;flex-direction:column;align-items:center;background:var(--bg);color:var(--tx);border-radius:16px;padding:10px 14px;flex-shrink:0"><span class="num">${comp}</span><span class="xs muted" style="text-transform:uppercase;letter-spacing:.1em">${comp===1?'día':'días'}</span></div></section>`
+ :`<button class="card" data-act="go" data-v="ajustes" style="color:var(--tx);text-align:left;cursor:pointer;font:inherit;flex-direction:row;align-items:center"><span class="grow"><b>Define tu próxima competencia</b><span class="sm muted">Torneo de pádel 3ª o carrera HYROX, con cuenta regresiva.</span></span>${ico('chev',18,'#9AA0A8')}</button>`}
+`;
+}
+
+function vCuerpo(){
+ const cks=D.checkins;
+ const head=`<header class="row between" style="align-items:flex-end"><div style="display:flex;flex-direction:column;gap:2px"><span class="eyebrow">${cks.length?`Semana ${cks.length} · ${fFecha(cks[cks.length-1].id)}`:'Progreso corporal'}</span><h1 class="disp h1">Composición</h1></div><button class="btn pri" data-act="go" data-v="checkin" style="border-radius:999px">${ico('plus',16,'#0B0C0E',2.6)}Check-in</button></header>`;
+ if(!cks.length)return head+`<section class="card empty">${ico('cam',40,'#4A4F57',1.6)}<h2 class="disp h2">Tu primer check-in</h2><p class="sm muted">Toma 3 fotos (frente, perfil, espalda), anota peso y cintura. Cada semana comparamos y la IA analiza tu cambio.</p><button class="btn pri" data-act="go" data-v="checkin">Empezar</button></section>`+`<section class="card"><h2 class="disp h2">Peso</h2>${chartPeso()}</section>`;
+ const conFoto=cks.filter(c=>c.fotos&&Object.keys(c.fotos).length);
+ const A=cks.find(c=>c.id===ui.cmpA)||conFoto[0]||cks[0];
+ const B=cks.find(c=>c.id===ui.cmpB)||conFoto[conFoto.length-1]||cks[cks.length-1];
+ const sem=c=>cks.indexOf(c)+1;
+ const slot=(c,on)=>{const u=photoURL(c.fotos?.[ui.angulo]);return `<figure style="margin:0;display:flex;flex-direction:column;gap:8px"><div class="photo ${on?'has':''}" style="cursor:default"><span class="badge ${on?'on':''}">Sem ${sem(c)}</span>${u?`<img src="${u}" alt="Foto ${ui.angulo} semana ${sem(c)}">`:`${ico('cam',30,'#4A4F57',1.6)}<span class="xs">Sin foto de ${ui.angulo}</span>`}</div><figcaption class="xs muted">${fFecha(c.id)}${c.peso!=null?' · '+fN(c.peso)+' kg':''}</figcaption></figure>`;};
+ const opts=sel=>cks.map(c=>`<option value="${c.id}" ${c===sel?'selected':''}>Sem ${sem(c)} · ${fFecha(c.id)}</option>`).join('');
+ const ps=pesoSerie();const pAct=ps.length?ps[ps.length-1][1]:null;const pIni=cks.find(c=>c.peso!=null)?.peso??(ps[0]?.[1]);
+ const conG=cks.filter(c=>grasaDe(c)!=null);let gAct=conG.length?grasaDe(conG[conG.length-1]):null,gIni=conG.length>1?grasaDe(conG[0]):null;
+ if(gAct==null){const dg=latest('grasa');if(dg)gAct=dg.grasa;}
+ const conC=cks.filter(c=>c.cintura!=null);const cAct=conC.length?conC[conC.length-1].cintura:null,cIni=conC.length>1?conC[0].cintura:null;
+ const magra=pAct!=null&&gAct!=null?pAct*(1-gAct/100):null;
+ const conAn=[...cks].reverse().find(c=>c.analisis);
+ const filas=MEDIDAS.map(([k,l,dir])=>{const con=cks.filter(c=>c[k]!=null);if(!con.length)return'';const a=con[con.length-1][k],b=con[0][k];const d=con.length>1?a-b:null;return `<div class="r"><span>${l}</span><b>${fN(a)}</b><span>${d==null?'<span class="muted">—</span>':deltaHtml(d,dir,'')}</span></div>`;}).join('');
+ return head+`
+<section class="stack" style="gap:12px">
+ <div class="seg" role="tablist" aria-label="Ángulo">${ANGULOS.map(([k,l])=>`<button role="tab" class="${ui.angulo===k?'on':''}" data-act="angulo" data-v="${k}">${l}</button>`).join('')}</div>
+ <div class="g2">${slot(A,false)}${slot(B,true)}</div>
+ ${cks.length>1?`<div class="g2"><label class="f">Antes<select data-cmp="A">${opts(A)}</select></label><label class="f">Después<select data-cmp="B">${opts(B)}</select></label></div>`:''}
+</section>
+<section class="g2">
+ <div class="card tile" style="padding:16px;gap:6px"><span class="lbl">Peso</span><span class="num">${fN(pAct)}<small> kg</small></span>${pIni!=null&&pAct!=null?deltaHtml(pAct-pIni,-1,' kg'):''}</div>
+ <div class="card tile" style="padding:16px;gap:6px"><span class="lbl">% Grasa ${conG.length?'(IA)':''}</span><span class="num">${gAct!=null?(conG.length?'≈':'')+fN(gAct):'—'}<small> %</small></span>${gIni!=null?deltaHtml(gAct-gIni,-1,' pts'):''}</div>
+ <div class="card tile" style="padding:16px;gap:6px"><span class="lbl">Masa magra</span><span class="num">${magra!=null?'≈'+fN(magra):'—'}<small> kg</small></span></div>
+ <div class="card tile" style="padding:16px;gap:6px"><span class="lbl">Cintura</span><span class="num">${fN(cAct)}<small> cm</small></span>${cIni!=null?deltaHtml(cAct-cIni,-1,' cm'):''}</div>
+</section>
+<section class="card"><div class="row between"><h2 class="disp h2">Peso</h2><span class="xs muted">${parseNum(S.metaPeso)!=null?'Meta '+fN(parseNum(S.metaPeso))+' kg':''}</span></div>${chartPeso()}</section>
+${filas?`<section class="card mtable" style="gap:0"><h2 class="disp h2" style="margin-bottom:8px">Medidas (cm)</h2>${filas}<p class="xs muted" style="margin-top:10px">Comparado con tu primera medición. Mide con cinta, misma hora, cada semana.</p></section>`:''}
+${conAn?renderAnalisis(conAn.analisis,conAn.id):`<section class="card"><span class="eyebrow">Análisis IA</span><p class="sm muted">Guarda un check-in con fotos y toca “Analizar con IA” para obtener estimación de % grasa, cambios y recomendaciones.</p></section>`}
+`;
+}
+function chartPeso(){
+ const s=pesoSerie();if(s.length<2)return`<p class="sm muted">Registra tu peso en al menos 2 fechas (check-in o balanza conectada a Salud) para ver la curva.</p>`;
+ const meta=parseNum(S.metaPeso);const vals=s.map(x=>x[1]).concat(meta!=null?[meta]:[]);const mn=Math.min(...vals)-.5,mx=Math.max(...vals)+.5;
+ const W=320,H=130,t0=parseYmd(s[0][0]).getTime(),t1=parseYmd(s[s.length-1][0]).getTime();
+ const X=f=>(parseYmd(f).getTime()-t0)/((t1-t0)||1)*W,Y=v=>H-(v-mn)/(mx-mn)*H;
+ const pts=s.map(([f,v])=>`${X(f).toFixed(1)},${Y(v).toFixed(1)}`).join(' ');const L=s[s.length-1];
+ return `<svg viewBox="-8 -8 ${W+16} ${H+16}" width="100%" role="img" aria-label="Peso de ${fN(s[0][1])} a ${fN(L[1])} kilos">
+ <line x1="0" x2="${W}" y1="0" y2="0" stroke="#24272C"/><line x1="0" x2="${W}" y1="${H/2}" y2="${H/2}" stroke="#24272C"/><line x1="0" x2="${W}" y1="${H}" y2="${H}" stroke="#24272C"/>
+ ${meta!=null?`<line x1="0" x2="${W}" y1="${Y(meta).toFixed(1)}" y2="${Y(meta).toFixed(1)}" stroke="#6FA8FF" stroke-width="1.5" stroke-dasharray="5 5"/>`:''}
+ <polyline fill="none" stroke="var(--cf)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" points="${pts}"/>
+ <circle cx="${X(L[0]).toFixed(1)}" cy="${Y(L[1]).toFixed(1)}" r="6" fill="#0B0C0E" stroke="var(--cf)" stroke-width="3"/></svg>
+ <div class="row between xs muted"><span>${fFecha(s[0][0])} · ${fN(s[0][1])} kg</span><span>${fFecha(L[0])} · ${fN(L[1])} kg</span></div>`;
+}
+function renderAnalisis(a,id){
+ const li=arr=>Array.isArray(arr)&&arr.length?`<ul class="ul">${arr.map(x=>`<li>${esc(x)}</li>`).join('')}</ul>`:'';
+ const sec=(t,arr,c)=>Array.isArray(arr)&&arr.length?`<div class="stack" style="gap:8px"><span class="lbl" style="color:${c||'var(--mu)'}">${t}</span>${li(arr)}</div>`:'';
+ return `<section class="card">
+ <div class="row between"><span class="eyebrow" style="color:var(--pa)">${ico('spark',14,'#C6F432')} Análisis IA · ${fFecha(id)}</span>${a.confianza?`<span class="pill">Confianza ${esc(a.confianza)}</span>`:''}</div>
+ ${a.grasa_min!=null?`<div><span class="num">${fN(a.grasa_min)}–${fN(a.grasa_max)}<small> % grasa estimada</small></span></div>`:''}
+ ${a.resumen?`<p style="font-size:15px;line-height:1.5">${esc(a.resumen)}</p>`:''}
+ ${sec('Cambios vs anterior',a.cambios_vs_anterior,'#C6F432')}
+ ${sec('Zonas con progreso',a.zonas_progreso)}
+ ${sec('Zonas a trabajar',a.zonas_a_trabajar,'#FF8A80')}
+ ${sec('Plan para esta semana',a.recomendaciones,'#FF6B1A')}
+ ${a.calidad_fotos?`<p class="xs muted">Fotos: ${esc(a.calidad_fotos)}</p>`:''}
+ <p class="xs muted">Estimación visual con margen de error; úsala como tendencia, no como medición clínica.</p>
+ </section>`;
+}
+
+function vEntrenos(){
+ const f=ui.filtro;const list=D.entrenos.filter(e=>f==='todos'||e.tipo===f);
+ let html=`<header class="row between" style="align-items:flex-end"><div style="display:flex;flex-direction:column;gap:2px"><span class="eyebrow">Rendimiento</span><h1 class="disp h1">Entrenos</h1></div><button class="btn pri" data-act="nuevoEntreno" style="border-radius:999px">${ico('plus',16,'#0B0C0E',2.6)}Registrar</button></header>
+ <div class="seg">${[['todos','Todos'],...Object.entries(TIPOS)].map(([k,l])=>`<button class="${f===k?'on':''}" data-act="filtro" data-v="${k}">${l}</button>`).join('')}</div>`;
+ // HYROX
+ const hy=D.entrenos.filter(e=>e.tipo==='hyrox'&&e.hyrox?.total);
+ if((f==='todos'||f==='hyrox')&&hy.length){
+  const L=hy[0],best=Math.min(...hy.map(e=>e.hyrox.total)),P=hy[1];
+  const sp=(L.hyrox.splits||[]).map((s,i)=>({n:ESTACIONES[i],s})).filter(x=>x.s);const mx=Math.max(1,...sp.map(x=>x.s));
+  const weak=new Set([...sp].sort((a,b)=>b.s-a.s).slice(0,2).map(x=>x.n));
+  const est=sp.reduce((a,x)=>a+x.s,0);
+  html+=`<section class="card"><div style="display:flex;flex-direction:column;gap:4px"><span class="xs" style="font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--hy)">HYROX · ${esc(L.titulo||'Simulación')}</span><span class="num" style="font-size:52px">${fTime(L.hyrox.total)}</span><span class="xs muted">${fFecha(L.fecha)}${P?` · ${L.hyrox.total<=P.hyrox.total?'▼':'▲'} ${fTime(Math.abs(L.hyrox.total-P.hyrox.total))} vs anterior`:''} · mejor ${fTime(best)}</span></div>
+  <div class="g3"><div class="tile"><span class="lbl">Running</span><span class="num md">${fTime(L.hyrox.running)}</span></div><div class="tile"><span class="lbl">Estaciones</span><span class="num md">${est?fTime(est):'—'}</span></div><div class="tile"><span class="lbl">Roxzone</span><span class="num md">${fTime(L.hyrox.roxzone)}</span></div></div>
+  ${sp.length?`<div class="stack" style="gap:10px">${sp.map(x=>`<div style="display:flex;flex-direction:column;gap:5px"><div class="row between sm"><span>${x.n}</span><b style="font-variant-numeric:tabular-nums">${fTime(x.s)}</b></div><div class="bar"><i style="width:${(x.s/mx*100).toFixed(0)}%;background:${weak.has(x.n)?'var(--cf)':'var(--hy)'}"></i></div></div>`).join('')}</div><span class="row xs" style="gap:8px;color:#C9CDD3"><span style="width:10px;height:10px;border-radius:3px;background:var(--cf)"></span>Tus 2 estaciones más lentas: prioridad del bloque</span>`:''}
+  </section>`;
+ }
+ // CrossFit PRs
+ if(f==='todos'||f==='crossfit'){
+  const seen=new Set();const prs=D.prs.filter(p=>{const k=p.nombre.trim().toLowerCase();if(seen.has(k))return false;seen.add(k);return true;});
+  const mes=today().slice(0,7);const nMes=D.prs.filter(p=>(p.fecha||'').startsWith(mes)).length;
+  html+=`<section class="card"><div class="row between"><h2 class="disp h2">CrossFit · Récords</h2>${nMes?`<span class="xs" style="font-weight:700;color:var(--cf)">${nMes} PR este mes</span>`:''}</div>
+  ${prs.length?`<div class="g2" style="gap:8px">${prs.map(p=>{const hist=D.prs.filter(x=>x.nombre.trim().toLowerCase()===p.nombre.trim().toLowerCase()).length;return `<button class="tile" data-act="editPR" data-v="${p.id}" style="border:0;color:var(--tx);text-align:left;font:inherit;cursor:pointer;padding:14px"><span class="xs muted">${esc(p.nombre)}</span><span class="num" style="font-size:30px">${esc(p.valor)}</span><span class="xs" style="font-weight:700;color:${p.fecha&&p.fecha.startsWith(mes)?'var(--cf)':'var(--mu)'}">${p.fecha?'PR · '+fFecha(p.fecha):''}${hist>1?` · ${hist} marcas`:''}</span></button>`;}).join('')}</div>`:'<p class="sm muted">Anota tus marcas: back squat, clean & jerk, Fran, etc.</p>'}
+  <button class="btn" data-act="nuevoPR">${ico('plus',16)}Nuevo récord</button></section>`;
+ }
+ // Pádel
+ const pa=D.entrenos.filter(e=>e.tipo==='padel'&&e.padel?.res);
+ if((f==='todos'||f==='padel')&&pa.length){
+  const g=pa.filter(e=>e.padel.res==='G').length,p=pa.length-g;const u5=pa.slice(0,5);
+  const kc=avg(pa.map(e=>e.kcal)),tor=pa.filter(e=>e.padel.torneo);const gt=tor.filter(e=>e.padel.res==='G').length;
+  html+=`<section class="card"><div class="row between" style="align-items:flex-start"><div style="display:flex;flex-direction:column;gap:4px"><span class="xs" style="font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--pa)">Pádel · 3ª categoría</span><span class="num" style="font-size:44px">${g} – ${p}</span><span class="xs muted">${fN(g/pa.length*100,0)}% de victorias · ${pa.length} partidos</span></div>
+  <div class="row" style="gap:4px" aria-label="Últimos partidos">${u5.map(e=>`<span style="width:26px;height:26px;border-radius:8px;background:${e.padel.res==='G'?'var(--pa)':'#2A2E33'};color:${e.padel.res==='G'?'#0B0C0E':'var(--tx)'};font-size:12px;font-weight:800;display:flex;align-items:center;justify-content:center">${e.padel.res}</span>`).join('')}</div></div>
+  <div class="g2" style="gap:8px"><div class="tile"><span class="lbl">Torneo</span><span class="num md">${tor.length?`${gt} – ${tor.length-gt}`:'—'}</span></div><div class="tile"><span class="lbl">Kcal / partido</span><span class="num md">${fN(kc,0)}</span></div></div></section>`;
+ }
+ html+=`<section class="card" style="gap:0"><h2 class="disp h2" style="padding-bottom:6px">Historial</h2>${list.length?list.slice(0,60).map(entItem).join(''):'<p class="sm muted" style="padding:10px 0">Sin registros todavía.</p>'}</section>`;
+ return html;
+}
+
+function loadDraft(id){
+ id=id||today();const ex=D.checkins.find(c=>c.id===id);
+ ui.draft={id,fotos:ex?{...ex.fotos}:{}};
+ for(const k of ['peso','cintura','pecho','cadera','brazo','muslo','notas'])ui.draft[k]=ex?.[k]!=null?String(ex[k]).replace('.',','):'';
+ if(!ex&&!ui.draft.peso){const p=latest('peso',3);if(p)ui.draft.peso=String(p.peso).replace('.',',');}
+}
+function vCheckin(){
+ if(!ui.draft)loadDraft();const d=ui.draft;const ex=D.checkins.find(c=>c.id===d.id);
+ const n=ex?D.checkins.indexOf(ex)+1:D.checkins.filter(c=>c.id<d.id).length+1;const nf=ANGULOS.filter(([k])=>d.fotos[k]).length;
+ const campo=(k,l,ph='')=>`<label class="f">${l}<input type="text" inputmode="decimal" data-d="${k}" value="${esc(d[k])}" placeholder="${ph}"></label>`;
+ const tip=t=>`<span class="row sm" style="gap:8px;align-items:flex-start">${ico('check',16,'#FF6B1A',2.4)}<span>${t}</span></span>`;
+ const busy=ui.analizando===d.id;
+ return `
+<header class="stack" style="gap:10px">
+ <div class="row between"><span class="eyebrow">${fFecha(d.id)} · Semana ${n}</span><span class="xs" style="font-weight:700;color:var(--cf)">${nf} de 3 fotos</span></div>
+ <h1 class="disp h1">Check-in semanal</h1>
+ <div class="g3" style="gap:6px">${ANGULOS.map(([k])=>`<div style="height:4px;border-radius:9px;background:${d.fotos[k]?'var(--cf)':'#24272C'}"></div>`).join('')}</div>
+</header>
+<section class="g3">${ANGULOS.map(([k,l])=>{const u=photoURL(d.fotos[k]);return `<div class="stack" style="gap:6px"><label class="photo ${u?'has':''}">${u?`<img src="${u}" alt="Foto ${l}">`:`<span class="ico" style="background:var(--s2);border-radius:50%;width:48px;height:48px">${ico('cam',22,'#C9CDD3')}</span>`}<span style="font-size:13px;font-weight:700;color:var(--tx);position:relative;z-index:1;${u?'background:rgba(11,12,14,.75);padding:4px 8px;border-radius:8px;margin-top:auto':''}">${l}</span>${u?'':'<span class="xs">Tomar o elegir</span>'}<input type="file" accept="image/*" data-foto="${k}" hidden></label>${u?`<button class="btn ghost xs" style="min-height:36px" data-act="quitarFoto" data-v="${k}">Quitar</button>`:''}</div>`;}).join('')}</section>
+<section class="card" style="gap:10px"><span class="eyebrow">Para comparar bien</span><div class="g2" style="gap:10px 12px">${tip('En ayunas, al despertar')}${tip('Misma luz y fondo')}${tip('Cámara a la altura del ombligo, a 2 m')}${tip('Misma pose y ropa cada semana')}</div></section>
+<section class="stack" style="gap:12px">
+ <h2 class="disp h2">Datos de la semana</h2>
+ <label class="f">Fecha del check-in<input type="date" data-d="id" value="${d.id}" max="${today()}"></label>
+ <div class="g2">${campo('peso','Peso (kg)','84,0')}${campo('cintura','Cintura (cm)','86')}${campo('pecho','Pecho (cm)','Opcional')}${campo('brazo','Brazo (cm)','Opcional')}${campo('cadera','Cadera (cm)','Opcional')}${campo('muslo','Muslo (cm)','Opcional')}</div>
+ <label class="f">Notas (dieta, lesiones, cómo te sientes)<textarea data-d="notas" rows="3">${esc(d.notas)}</textarea></label>
+</section>
+<button class="btn pri big" data-act="guardarCheckin">${ex?'Actualizar check-in':'Guardar check-in'}</button>
+${ex?`<section class="g2"><button class="btn lime" data-act="analizar" data-v="${d.id}" ${busy||!nf?'disabled':''}>${busy?'<span class="spin"></span>Analizando…':ico('spark',18,'#0B0C0E')+'Analizar con IA'}</button><button class="btn" data-act="compartir" data-v="${d.id}" ${nf?'':'disabled'}>${ico('share',18)}Enviar fotos</button></section>
+${busy?'<p class="sm muted">Enviando fotos a Claude… suele tardar entre 20 y 60 segundos.</p>':''}
+${ex.analisis?renderAnalisis(ex.analisis,ex.id):''}`:''}
+`;
+}
+
+function vAjustes(){
+ const v=k=>esc(S[k]??'');
+ const tpl=`{"fecha":"⟨FechaHoy⟩","kcal_ayer":"⟨KcalAyer⟩","ejercicio_ayer":"⟨EjercicioAyer⟩","pasos_ayer":"⟨PasosAyer⟩","sueno":"⟨Sueño⟩","hrv":"⟨HRV⟩","fc_reposo":"⟨FCReposo⟩","vo2max":"⟨VO2⟩","peso":"⟨Peso⟩"}`;
+ const gid=gistIdLimpio()||'TU_ID_DEL_GIST';
+ return `
+<header class="row between"><div style="display:flex;flex-direction:column;gap:2px"><span class="eyebrow">FORJA ${VERSION}</span><h1 class="disp h1">Ajustes</h1></div><button class="iconbtn" data-act="go" data-v="hoy" aria-label="Volver">${ico('x',20)}</button></header>
+
+<section class="card"><h2 class="disp h2">Perfil y metas</h2>
+ <label class="f">Nombre<input data-s="nombre" value="${v('nombre')}"></label>
+ <div class="g2"><label class="f">Meta de peso (kg)<input data-s="metaPeso" inputmode="decimal" value="${v('metaPeso')}" placeholder="82"></label><label class="f">Meta kcal activas/día<input data-s="metaKcal" inputmode="numeric" value="${v('metaKcal')}"></label></div>
+ <label class="f">Próxima competencia<input data-s="compNombre" value="${v('compNombre')}" placeholder="Torneo Pádel 3ª categoría"></label>
+ <label class="f">Fecha<input type="date" data-s="compFecha" value="${v('compFecha')}"></label>
+</section>
+
+<section class="card"><div class="row between"><h2 class="disp h2">Apple Watch</h2><span class="pill">${ico('watch',14,'#9AA0A8')}${relTime(S.lastSync)}</span></div>
+ <p class="sm muted">Un Atajo del iPhone lee Salud cada mañana y sube un JSON a un Gist secreto de GitHub. FORJA lo descarga sola al abrirse.</p>
+ <label class="f">ID del Gist (o su URL)<input data-s="gistId" value="${v('gistId')}" placeholder="a1b2c3d4e5…" autocapitalize="off" autocorrect="off" spellcheck="false"></label>
+ <div class="g3"><button class="btn pri" data-act="sync">Sincronizar</button><button class="btn" data-act="pegar">Pegar</button><button class="btn" data-act="importJson">Archivo</button></div>
+
+ <details><summary>1 · Preparar GitHub (una vez, desde el PC)</summary><ol>
+  <li>Entra a <a href="https://gist.github.com" target="_blank" rel="noopener">gist.github.com</a>, nombre de archivo <code>salud.json</code>, contenido <code>{}</code> y pulsa <b>Create secret gist</b>.</li>
+  <li>Copia el ID: es la parte final de la URL del gist. Pégalo arriba.</li>
+  <li>Crea un token en <a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener">GitHub › Fine-grained tokens</a>: expiración 1 año, <b>Account permissions › Gists › Read and write</b>. Copia el token (<code>github_pat_…</code>). Solo va en el Atajo, nunca en esta app.</li>
+ </ol></details>
+
+ <details><summary>2 · Crear el Atajo “Exportar a FORJA”</summary><ol>
+  <li>App <b>Atajos</b> › <b>+</b> › nombre “Exportar a FORJA”.</li>
+  <li><b>Fecha actual</b> › <b>Ajustar fecha</b>: “Obtener inicio del día” › guarda como variable <b>HoyInicio</b>. Otro <b>Ajustar fecha</b>: restar 1 día a HoyInicio › <b>AyerInicio</b>.</li>
+  <li><b>Buscar muestras de Salud</b>: Tipo <i>Energía activa</i>, Fecha de inicio <i>está entre</i> AyerInicio y HoyInicio › <b>Calcular estadísticas</b>: Suma › <b>Redondear número</b> › variable <b>KcalAyer</b>.</li>
+  <li>Repite el paso 3 con <i>Minutos de ejercicio</i> › <b>EjercicioAyer</b> y con <i>Pasos</i> › <b>PasosAyer</b>.</li>
+  <li><b>Buscar muestras de Salud</b>: <i>Análisis del sueño</i>, Fecha de inicio <i>en las últimas 16 horas</i>, Valor <i>no es</i> “Despierto” (y <i>no es</i> “En cama” si aparece) › <b>Obtener detalles</b>: Duración › <b>Calcular estadísticas</b>: Suma › <b>Sueño</b>.</li>
+  <li><i>Variabilidad de la frecuencia cardíaca</i>, últimas 24 horas › Calcular estadísticas: Promedio › <b>HRV</b>.</li>
+  <li><i>Frecuencia cardíaca en reposo</i>: ordenar por Fecha de inicio, <i>más reciente primero</i>, límite 1 › <b>Obtener detalles</b>: Valor › <b>FCReposo</b>. Igual con <i>VO2 máx.</i> › <b>VO2</b> y <i>Peso</i> › <b>Peso</b> (si usas balanza conectada).</li>
+  <li><b>Formatear fecha</b>: Fecha actual, formato personalizado <code>yyyy-MM-dd</code> › <b>FechaHoy</b>.</li>
+  <li>Acción <b>Texto</b>: pega esta plantilla y reemplaza cada ⟨…⟩ por su variable (mantén las comillas):<pre id="tplJson">${esc(tpl)}</pre><button class="btn" style="margin-top:8px" data-act="copy" data-v="tplJson">Copiar plantilla</button></li>
+  <li><b>Obtener contenido de URL</b>: URL <code>https://api.github.com/gists/${esc(gid)}</code> · Método <b>PATCH</b> · Encabezados: <code>Authorization</code> = <code>Bearer TU_TOKEN</code> y <code>Accept</code> = <code>application/vnd.github+json</code> · Cuerpo <b>JSON</b>: clave <code>files</code> (Diccionario) › clave <code>salud.json</code> (Diccionario) › clave <code>content</code> (Texto) = variable <b>Texto</b>.</li>
+  <li>Opcional: <b>Copiar al portapapeles</b> el Texto, para usar “Pegar” sin GitHub.</li>
+  <li>Ejecútalo una vez a mano: iOS pedirá permisos de Salud; acéptalos todos. Luego toca “Sincronizar” aquí y revisa “Último dato recibido”.</li>
+ </ol></details>
+
+ <details><summary>3 · Automatizarlo cada mañana</summary><ol>
+  <li>iOS bloquea los datos de Salud con el iPhone bloqueado, así que el disparador debe ocurrir con el teléfono en uso.</li>
+  <li>Crea un segundo atajo “FORJA diario”: <b>Obtener archivo</b> <code>Atajos/forja_ultimo.txt</code> (desactiva “Mostrar error si no existe”) › <b>Si</b> el archivo <i>es</i> FechaHoy › <b>Detener atajo</b> › fin del Si › <b>Ejecutar atajo</b> “Exportar a FORJA” › <b>Guardar archivo</b> FechaHoy en <code>Atajos/forja_ultimo.txt</code> (sobrescribir, sin preguntar).</li>
+  <li>Atajos › <b>Automatización</b> › <b>+</b> › <b>App</b> › elige una app que abras al despertar (WhatsApp, Mail…) › <b>Se abre</b> › <b>Ejecutar inmediatamente</b> › atajo “FORJA diario”. Corre una vez al día, con sueño y actividad de ayer completos.</li>
+  <li>Para forzarlo en cualquier momento: ejecuta “Exportar a FORJA” desde el widget o el botón de Acción.</li>
+ </ol></details>
+ ${S.lastRaw?`<details><summary>Último dato recibido</summary><pre>${esc(S.lastRaw)}</pre></details>`:''}
+</section>
+
+<section class="card"><h2 class="disp h2">Análisis corporal con IA</h2>
+ <p class="sm muted">Las fotos se envían a la API de Claude solo cuando tocas “Analizar”. Necesitas una API key de <a href="https://platform.claude.com" target="_blank" rel="noopener">platform.claude.com</a> con saldo (se cobra aparte de tu plan de Claude; cada análisis cuesta centavos de dólar). La key queda guardada solo en este iPhone.</p>
+ <label class="f">API key<input type="password" data-s="apiKey" value="${v('apiKey')}" placeholder="sk-ant-…" autocomplete="off" autocapitalize="off" spellcheck="false"></label>
+ <label class="f">Modelo<select data-s="modelo">${MODELOS.map(([k,l])=>`<option value="${k}" ${S.modelo===k?'selected':''}>${l}</option>`).join('')}</select></label>
+ <p class="xs muted">Sin API key: usa “Enviar fotos” en el check-in y compártelas con Claude en la conversación.</p>
+</section>
+
+<section class="card"><h2 class="disp h2">Respaldo</h2>
+ <p class="sm muted">Todo vive en este iPhone (fotos incluidas). Si borras el ícono de inicio se borran los datos: exporta un respaldo cada cierto tiempo.</p>
+ <div class="g2"><button class="btn" data-act="exportar">Exportar respaldo</button><button class="btn" data-act="importarBackup">Restaurar</button></div>
+ <button class="btn danger ghost" data-act="borrarTodo">Borrar todos los datos</button>
+</section>`;
+}
+
+/* ================= Formularios ================= */
+function openModal(html){$('#modalBody').innerHTML=html;const d=$('#modal');if(!d.open)d.showModal();}
+function closeModal(){const d=$('#modal');if(d.open)d.close();}
+function modalEntreno(e){
+ const x=e||{fecha:today(),tipo:ui.filtro!=='todos'?ui.filtro:'crossfit'};const h=x.hyrox||{},p=x.padel||{};
+ const t=s=>s!=null?fTime(s):'';
+ openModal(`<form data-form="entreno" class="stack">
+ <input type="hidden" name="id" value="${x.id??''}">
+ <div class="row between"><h2 class="disp h2">${e?'Editar':'Nuevo'} entreno</h2><button type="button" class="btn ghost" data-act="cerrar" aria-label="Cerrar">${ico('x',18)}</button></div>
+ <div class="g2"><label class="f">Disciplina<select name="tipo">${Object.entries(TIPOS).map(([k,l])=>`<option value="${k}" ${x.tipo===k?'selected':''}>${l}</option>`).join('')}</select></label><label class="f">Fecha<input type="date" name="fecha" value="${x.fecha}"></label></div>
+ <label class="f">Título<input name="titulo" value="${esc(x.titulo||'')}" placeholder="Ej: Fuerza + Metcon, Simulación, Partido amistoso"></label>
+ <div class="g2"><label class="f">Duración (min)<input name="duracion" inputmode="numeric" value="${x.duracion??''}"></label><label class="f">Kcal (Watch)<input name="kcal" inputmode="numeric" value="${x.kcal??''}"></label></div>
+ <div data-sec="padel" class="stack" ${x.tipo==='padel'?'':'hidden'}>
+  <div class="g2"><label class="f">Resultado<select name="res"><option value="G" ${p.res!=='P'?'selected':''}>Ganado</option><option value="P" ${p.res==='P'?'selected':''}>Perdido</option></select></label><label class="f">Marcador<input name="marcador" value="${esc(p.marcador||'')}" placeholder="6-4 3-6 7-5"></label></div>
+  <label class="row sm" style="gap:10px;min-height:44px"><input type="checkbox" name="torneo" ${p.torneo?'checked':''} style="width:22px;min-height:22px;height:22px;-webkit-appearance:checkbox;appearance:auto">Partido de torneo</label>
+ </div>
+ <div data-sec="hyrox" class="stack" ${x.tipo==='hyrox'?'':'hidden'}>
+  <div class="g3"><label class="f">Total<input name="h_total" value="${t(h.total)}" placeholder="1:18:42" inputmode="decimal"></label><label class="f">Running<input name="h_running" value="${t(h.running)}" placeholder="41:30" inputmode="decimal"></label><label class="f">Roxzone<input name="h_rox" value="${t(h.roxzone)}" placeholder="2:59" inputmode="decimal"></label></div>
+  <span class="lbl">Estaciones (m:ss, opcional) · puedes usar punto: 4.21</span>
+  <div class="g2">${ESTACIONES.map((n,i)=>`<label class="f">${n}<input name="h_s${i}" value="${t(h.splits?.[i])}" placeholder="0:00" inputmode="decimal"></label>`).join('')}</div>
+ </div>
+ <label class="f">Notas<textarea name="notas" rows="2">${esc(x.notas||'')}</textarea></label>
+ <button class="btn pri big" type="submit">Guardar</button>
+ ${e?`<button type="button" class="btn danger ghost" data-act="delEntreno" data-v="${x.id}">Eliminar entreno</button>`:''}
+ </form>`);
+}
+async function submitEntreno(form){
+ const fd=new FormData(form);const g=k=>(fd.get(k)||'').toString().trim();const tipo=g('tipo');
+ const o={fecha:g('fecha')||today(),tipo,titulo:g('titulo'),duracion:parseNum(g('duracion')),kcal:parseNum(g('kcal')),notas:g('notas')};
+ if(g('id'))o.id=Number(g('id'));
+ if(tipo==='padel')o.padel={res:g('res')||'G',marcador:g('marcador'),torneo:fd.get('torneo')==='on'};
+ if(tipo==='hyrox')o.hyrox={total:parseTime(g('h_total')),running:parseTime(g('h_running')),roxzone:parseTime(g('h_rox')),splits:ESTACIONES.map((_,i)=>parseTime(g('h_s'+i)))};
+ await dbPut('entrenos',o);closeModal();await refresh();toast('Entreno guardado');
+}
+function modalPR(p){
+ const x=p||{fecha:today()};
+ openModal(`<form data-form="pr" class="stack"><input type="hidden" name="id" value="${x.id??''}">
+ <div class="row between"><h2 class="disp h2">${p?'Editar':'Nuevo'} récord</h2><button type="button" class="btn ghost" data-act="cerrar" aria-label="Cerrar">${ico('x',18)}</button></div>
+ <label class="f">Ejercicio o benchmark<input name="nombre" list="prList" value="${esc(x.nombre||'')}" required placeholder="Back Squat"></label>
+ <datalist id="prList">${['Back Squat','Front Squat','Deadlift','Clean & Jerk','Snatch','Strict Press','Fran','Grace','Murph','Strict Pull-ups','Row 2.000 m','5 km'].map(n=>`<option value="${n}">`).join('')}</datalist>
+ <div class="g2"><label class="f">Marca<input name="valor" value="${esc(x.valor||'')}" required placeholder="160 kg · 4:12"></label><label class="f">Fecha<input type="date" name="fecha" value="${x.fecha||today()}"></label></div>
+ <button class="btn pri big" type="submit">Guardar</button>
+ ${p?`<button type="button" class="btn danger ghost" data-act="delPR" data-v="${x.id}">Eliminar</button>`:''}</form>`);
+}
+async function submitPR(form){const fd=new FormData(form);const o={nombre:String(fd.get('nombre')).trim(),valor:String(fd.get('valor')).trim(),fecha:fd.get('fecha')||today()};if(fd.get('id'))o.id=Number(fd.get('id'));await dbPut('prs',o);closeModal();await refresh();toast('Récord guardado');}
+
+/* ================= Check-in y análisis ================= */
+async function guardarCheckin(silent){
+ const d=ui.draft;const ex=D.checkins.find(c=>c.id===d.id);
+ const o={id:d.id,fotos:{...d.fotos},notas:(d.notas||'').trim()};
+ for(const k of ['peso','cintura','pecho','cadera','brazo','muslo'])o[k]=parseNum(d[k]);
+ if(ex?.analisis)o.analisis=ex.analisis;
+ if(!Object.keys(o.fotos).length&&o.peso==null){toast('Agrega al menos una foto o tu peso');return false;}
+ await dbPut('checkins',o);await refresh();if(!silent)toast('Check-in guardado');return true;
+}
+const SYS=`Eres un coach experto en composición corporal y rendimiento para un atleta híbrido hombre que entrena CrossFit y HYROX y quiere volver a competir fuerte en pádel 3ª categoría en Chile. Analizas fotos de un check-in semanal (frente, perfil, espalda) y las comparas con el check-in anterior cuando existe.
+Reglas: estima visualmente con rangos honestos (las estimaciones por foto tienen un error típico de ±3 a 4 puntos de % grasa); no inventes medidas que no se puedan ver; diferencia cambios reales de diferencias de luz, pose o bombeo; no hagas diagnósticos médicos; sé directo y concreto, en español de Chile. Responde SOLO con un objeto JSON válido, sin texto adicional.`;
+const INSTR=`Devuelve exactamente este JSON:
+{"resumen":"2-3 frases con la lectura principal","grasa_min":número,"grasa_max":número,"confianza":"baja|media|alta","cambios_vs_anterior":["..."],"zonas_progreso":["..."],"zonas_a_trabajar":["..."],"recomendaciones":["3 a 5 acciones concretas para la próxima semana: entrenamiento, nutrición y recuperación, considerando la carga de CrossFit, HYROX y pádel"],"calidad_fotos":"comentario breve para que las próximas fotos sean más comparables"}
+Si no hay check-in anterior, "cambios_vs_anterior" va vacío.`;
+function contexto(ck,prev,first){
+ const med=c=>[c.peso!=null?`peso ${c.peso} kg`:null,...MEDIDAS.map(([k,l])=>c[k]!=null?`${l.toLowerCase()} ${c[k]} cm`:null)].filter(Boolean).join(', ')||'sin medidas';
+ const des=addDays(ck.id,-7);const ds=D.dias.filter(d=>d.fecha>des&&d.fecha<=ck.id);
+ const w=[['kcal activas/día','kcal',0],['min ejercicio/día','ejercicio',0],['sueño (h)','sueno_min',1],['HRV (ms)','hrv',0],['FC reposo','fc_reposo',0],['VO2máx','vo2max',1]].map(([l,k,dec])=>{let a=avg(ds.map(d=>d[k]));if(a==null)return null;if(k==='sueno_min')a/=60;return `${l} ${fN(a,dec)}`;}).filter(Boolean).join(', ');
+ const es=D.entrenos.filter(e=>e.fecha>des&&e.fecha<=ck.id);const porT=Object.keys(TIPOS).map(k=>{const x=es.filter(e=>e.tipo===k);return x.length?`${TIPOS[k]}: ${x.length} sesiones, ${fN(x.reduce((a,e)=>a+(e.duracion||0),0),0)} min`:null;}).filter(Boolean).join('; ');
+ const L=[`Check-in actual (${ck.id}): ${med(ck)}.`];
+ if(ck.notas)L.push(`Notas del atleta: ${ck.notas}`);
+ if(prev)L.push(`Check-in anterior (${prev.id}): ${med(prev)}.${prev.analisis?.resumen?' Lectura anterior: '+prev.analisis.resumen:''}`);
+ if(first&&first!==prev)L.push(`Primer check-in (${first.id}): ${med(first)}.`);
+ if(parseNum(S.metaPeso)!=null)L.push(`Meta de peso: ${parseNum(S.metaPeso)} kg.`);
+ if(S.compNombre&&S.compFecha)L.push(`Próxima competencia: ${S.compNombre} el ${S.compFecha}.`);
+ L.push(`Apple Watch últimos 7 días (promedios): ${w||'sin datos'}.`);
+ L.push(`Entrenos últimos 7 días: ${porT||'sin registros'}.`);
+ return L.join('\n');
+}
+async function analizar(id){
+ const ck=D.checkins.find(c=>c.id===id);if(!ck)return;
+ if(!S.apiKey){toast('Agrega tu API key de Claude en Ajustes');go('ajustes');return;}
+ const angs=ANGULOS.filter(([k])=>ck.fotos?.[k]);if(!angs.length){toast('Agrega fotos al check-in');return;}
+ ui.analizando=id;render();
+ try{
+  const idx=D.checkins.indexOf(ck);const prev=D.checkins.slice(0,idx).reverse().find(c=>c.fotos&&Object.keys(c.fotos).length);const first=idx>0?D.checkins[0]:null;
+  const content=[{type:'text',text:contexto(ck,prev,first)}];
+  for(const [k,l] of angs){content.push({type:'text',text:`FOTO ACTUAL · ${l} · ${ck.id}`});content.push({type:'image',source:{type:'base64',media_type:'image/jpeg',data:await toB64(ck.fotos[k])}});}
+  if(prev)for(const [k,l] of ANGULOS)if(prev.fotos?.[k]){content.push({type:'text',text:`FOTO ANTERIOR · ${l} · ${prev.id}`});content.push({type:'image',source:{type:'base64',media_type:'image/jpeg',data:await toB64(prev.fotos[k])}});}
+  content.push({type:'text',text:INSTR});
+  const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'content-type':'application/json','x-api-key':S.apiKey.trim(),'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model:S.modelo||'claude-sonnet-5-5',max_tokens:2500,system:SYS,messages:[{role:'user',content}]})});
+  const j=await r.json().catch(()=>({}));
+  if(!r.ok)throw new Error(r.status===401?'API key inválida':r.status===429?'Límite de uso de la API: intenta más tarde':r.status===400&&/credit/i.test(j.error?.message||'')?'Sin saldo en la cuenta de la API':(j.error?.message||'Error de la API '+r.status));
+  const txt=(j.content||[]).filter(c=>c.type==='text').map(c=>c.text).join('\n');const s=txt.indexOf('{'),e=txt.lastIndexOf('}');
+  if(s<0)throw new Error('La respuesta no vino en el formato esperado');
+  const a=JSON.parse(txt.slice(s,e+1));a.fecha=new Date().toISOString();a.modelo=S.modelo;
+  ck.analisis=a;await dbPut('checkins',ck);toast('Análisis listo');
+ }catch(err){toast(err.message||'Error al analizar');console.error(err);}
+ finally{ui.analizando=null;await refresh();}
+}
+async function compartir(id){
+ const ck=D.checkins.find(c=>c.id===id);if(!ck)return;
+ const files=ANGULOS.filter(([k])=>ck.fotos?.[k]).map(([k])=>new File([ck.fotos[k]],`forja-${id}-${k}.jpg`,{type:'image/jpeg'}));
+ const text=`Check-in FORJA ${id} · ${[ck.peso!=null?'peso '+fN(ck.peso)+' kg':null,...MEDIDAS.map(([k,l])=>ck[k]!=null?l.toLowerCase()+' '+fN(ck[k])+' cm':null)].filter(Boolean).join(' · ')}`;
+ if(navigator.canShare&&navigator.canShare({files})){try{await navigator.share({files,title:'Check-in FORJA',text});}catch(e){if(e.name!=='AbortError')toast('No se pudo compartir');}}
+ else toast('Este navegador no permite compartir archivos');
+}
+
+/* ================= Respaldo ================= */
+async function exportar(){
+ toast('Preparando respaldo…');const cks=[];
+ for(const c of D.checkins){const f={};for(const [k,b] of Object.entries(c.fotos||{}))f[k]=await blobToData(b);cks.push({...c,fotos:f});}
+ const data={app:'FORJA',v:1,exportado:new Date().toISOString(),settings:{...S,apiKey:''},dias:D.dias,entrenos:D.entrenos,prs:D.prs,checkins:cks};
+ const file=new File([JSON.stringify(data)],`forja-respaldo-${today()}.json`,{type:'application/json'});
+ if(navigator.canShare&&navigator.canShare({files:[file]})){try{await navigator.share({files:[file],title:'Respaldo FORJA'});return;}catch(e){if(e.name==='AbortError')return;}}
+ const a=document.createElement('a');a.href=URL.createObjectURL(file);a.download=file.name;document.body.appendChild(a);a.click();a.remove();
+}
+async function restaurar(file){
+ const data=JSON.parse(await file.text());if(data.app!=='FORJA')throw new Error('No es un respaldo de FORJA');
+ if(!confirm('Esto reemplaza los datos actuales por los del respaldo. ¿Continuar?'))return;
+ for(const n of ['dias','entrenos','prs','checkins'])await dbClear(n);
+ for(const d of data.dias||[])await dbPut('dias',d);
+ for(const e of data.entrenos||[])await dbPut('entrenos',e);
+ for(const p of data.prs||[])await dbPut('prs',p);
+ for(const c of data.checkins||[]){const f={};for(const [k,u] of Object.entries(c.fotos||{}))f[k]=await(await fetch(u)).blob();await dbPut('checkins',{...c,fotos:f});}
+ S={...DEF,...data.settings,apiKey:S.apiKey};await saveS();ui.draft=null;await refresh();toast('Respaldo restaurado');
+}
+
+/* ================= Eventos ================= */
+const ACT={
+ go:v=>go(v), sync:()=>syncGist(false), pegar:pegarSalud, importJson:()=>$('#fileJson').click(),
+ angulo:v=>{ui.angulo=v;render();}, filtro:v=>{ui.filtro=v;render();},
+ nuevoEntreno:()=>modalEntreno(), editEntreno:v=>modalEntreno(D.entrenos.find(x=>x.id==v)),
+ delEntreno:async v=>{if(confirm('¿Eliminar este entreno?')){await dbDel('entrenos',Number(v));closeModal();await refresh();}},
+ nuevoPR:()=>modalPR(), editPR:v=>modalPR(D.prs.find(x=>x.id==v)),
+ delPR:async v=>{if(confirm('¿Eliminar este récord?')){await dbDel('prs',Number(v));closeModal();await refresh();}},
+ cerrar:closeModal,
+ quitarFoto:v=>{delete ui.draft.fotos[v];render();},
+ guardarCheckin:()=>guardarCheckin(false),
+ analizar:async v=>{if(view==='checkin'&&!(await guardarCheckin(true)))return;await analizar(v);},
+ compartir:v=>compartir(v),
+ copy:async v=>{try{await navigator.clipboard.writeText($('#'+v).textContent);toast('Copiado');}catch(e){toast('No se pudo copiar');}},
+ exportar, importarBackup:()=>$('#fileBackup').click(),
+ borrarTodo:async()=>{if(!confirm('¿Borrar TODOS los datos de FORJA en este iPhone? No se puede deshacer.'))return;for(const n of ['dias','entrenos','prs','checkins'])await dbClear(n);S={...DEF,apiKey:S.apiKey,gistId:S.gistId};await saveS();ui.draft=null;await refresh();toast('Datos borrados');}
+};
+document.addEventListener('click',async e=>{const el=e.target.closest('[data-act]');if(!el)return;e.preventDefault();try{await ACT[el.dataset.act]?.(el.dataset.v,el);}catch(err){console.error(err);toast(err.message||String(err));}});
+document.addEventListener('input',e=>{const t=e.target;if(t.dataset.d&&t.dataset.d!=='id'&&ui.draft)ui.draft[t.dataset.d]=t.value;});
+document.addEventListener('change',async e=>{
+ const t=e.target;
+ try{
+  if(t.dataset.foto){const f=t.files?.[0];if(!f)return;toast('Procesando foto…');ui.draft.fotos[t.dataset.foto]=await compress(f);render();return;}
+  if(t.dataset.s){let val=t.value;if(t.dataset.s==='gistId'){S.gistSeen=[];}S[t.dataset.s]=val;await saveS();if(t.dataset.s==='gistId'&&gistIdLimpio())syncGist(false);return;}
+  if(t.dataset.d==='id'){if(t.value){loadDraft(t.value);render();}return;}
+  if(t.dataset.cmp){ui['cmp'+t.dataset.cmp]=t.value;render();return;}
+  if(t.name==='tipo'&&t.form){t.form.querySelectorAll('[data-sec]').forEach(s=>s.hidden=s.dataset.sec!==t.value);return;}
+  if(t.id==='fileJson'){const f=t.files?.[0];t.value='';if(f)await importarTexto(await f.text());return;}
+  if(t.id==='fileBackup'){const f=t.files?.[0];t.value='';if(f)await restaurar(f);return;}
+ }catch(err){console.error(err);toast(err.message||String(err));}
+});
+document.addEventListener('submit',async e=>{
+ const f=e.target.closest('form[data-form]');if(!f)return;e.preventDefault();
+ try{const k=f.dataset.form;if(k==='entreno')await submitEntreno(f);else if(k==='pr')await submitPR(f);else if(k==='pegar'){await importarTexto(new FormData(f).get('txt'));closeModal();}}
+ catch(err){console.error(err);toast(err.message||String(err));}
+});
+$('#modal').addEventListener('click',e=>{if(e.target.id==='modal')closeModal();});
+
+/* ================= Inicio ================= */
+(async()=>{
+ try{
+  db=await openDB();S={...DEF,...(await dbGet('kv','settings')||{})};await loadAll();go('hoy');
+  if(navigator.storage&&navigator.storage.persist)navigator.storage.persist().catch(()=>{});
+  if('serviceWorker' in navigator&&location.protocol==='https:')navigator.serviceWorker.register('sw.js').catch(()=>{});
+  autoSync();
+  document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')autoSync();});
+ }catch(err){$('#view').innerHTML=`<p class="down">No se pudo iniciar: ${esc(err.message)}</p>`;}
+})();
+</script>
+</body>
+</html>
