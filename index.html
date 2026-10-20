@@ -47,7 +47,7 @@ header{gap:12px}header>div{min-width:0}.h2{font-size:22px;font-weight:700}
 .btn.pri{background:var(--cf);border-color:var(--cf);color:#0B0C0E;font-weight:700}
 .btn.lime{background:var(--pa);border-color:var(--pa);color:#0B0C0E;font-weight:700}
 .btn.ghost{background:transparent}
-.btn.big{min-height:54px;font-family:var(--disp);font-size:20px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;width:100%}
+.btn.big{white-space:normal;min-height:54px;font-family:var(--disp);font-size:20px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;width:100%}
 .btn.danger{color:var(--bad)}
 .btn:disabled{opacity:.45}
 .iconbtn{width:46px;height:46px;border-radius:50%;border:2px solid var(--cf);background:var(--s1);color:var(--tx);display:flex;align-items:center;justify-content:center;cursor:pointer}
@@ -131,18 +131,19 @@ dialog::backdrop{background:rgba(0,0,0,.65)}
 <div id="tip" aria-hidden="true"></div>
 <input type="file" id="fileJson" accept=".json,application/json,text/plain" hidden>
 <input type="file" id="fileBackup" accept=".json,application/json" hidden>
+<input type="file" id="fileSalud" accept=".zip,.xml,.json,application/zip,text/xml,application/xml,application/json" hidden>
 
 <script>
 'use strict';
 /* ================= Constantes ================= */
-const VERSION='1.2';
+const VERSION='1.4.1';
 const COLORS={crossfit:'#FF6B1A',hyrox:'#6FA8FF',padel:'#C6F432'};
 const TIPOS={crossfit:'CrossFit',hyrox:'HYROX',padel:'Pádel'};
 const ANGULOS=[['frente','Frente'],['perfil','Perfil'],['espalda','Espalda']];
 const ESTACIONES=['SkiErg 1.000 m','Sled Push','Sled Pull','Burpee Broad Jump','Remo 1.000 m','Farmers Carry','Sandbag Lunges','Wall Balls'];
 const MEDIDAS=[['cintura','Cintura (ombligo)',-1],['pecho','Pecho',1],['cadera','Cadera',-1],['brazo','Brazo (contraído)',1],['muslo','Muslo',1]];
 const MODELOS=[['claude-sonnet-5-5','Claude Sonnet 5.5 · recomendado'],['claude-opus-5-5','Claude Opus 5.5 · más preciso'],['claude-haiku-5-5','Claude Haiku 5.5 · más económico']];
-const DEF={nombre:'Felipe',metaPeso:'',metaKcal:900,compNombre:'',compFecha:'',gistId:'',gistSeen:[],lastSync:'',lastRaw:'',apiKey:'',modelo:'claude-sonnet-5-5'};
+const DEF={nombre:'Felipe',metaPeso:'',metaKcal:900,compNombre:'',compFecha:'',gistId:'',puenteUrl:'',lastImport:'',gistSeen:[],lastSync:'',lastRaw:'',apiKey:'',modelo:'claude-sonnet-5-5'};
 const MESES=['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
 const DIAS=['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
 const ICON={
@@ -282,7 +283,163 @@ async function syncGist(silent){
  }catch(e){if(!silent)toast(e.message);console.warn(e);}
  finally{ui.sincronizando=false;await refresh();}
 }
-function autoSync(){if(!gistIdLimpio())return;if(S.lastSync&&Date.now()-new Date(S.lastSync)<10*6e4)return;syncGist(true);}
+function fuenteWatch(){return (S.puenteUrl||'').trim()?'hae':gistIdLimpio()?'atajo':null;}
+function syncWatch(silent){const f=fuenteWatch();if(f==='hae')return syncPuente(silent);if(f==='atajo')return syncGist(silent);if(!silent){toast('Configura la conexión del Watch en Ajustes');go('ajustes');}}
+function autoSync(){if(!fuenteWatch())return;if(S.lastSync&&Date.now()-new Date(S.lastSync)<10*6e4)return;syncWatch(true);}
+
+/* ---- Health Auto Export (vía puente Google Apps Script) ---- */
+let WW=[]; // entrenos detectados por el Watch
+const RANGOS={kcal:[0,15000],ejercicio:[0,1440],pasos:[0,150000],sueno_min:[0,1100],profundo:[0,600],rem:[0,600],nucleo:[0,900],hrv:[5,300],fc_reposo:[25,130],vo2max:[15,95],peso:[30,250],grasa:[2,60]};
+function haeFecha(s){const m=String(s||'').match(/^(\d{4}-\d\d-\d\d)[ T](\d\d:\d\d)(?::(\d\d))?\s*([+-]\d\d):?(\d\d)?/);if(!m)return null;return new Date(`${m[1]}T${m[2]}:${m[3]||'00'}${m[4]}:${m[5]||'00'}`);}
+function haeToDias(s){
+ const out={};const put=(f,k,v)=>{if(v==null||isNaN(v))return;const r=RANGOS[k];if(r&&(v<r[0]||v>r[1]))return;(out[f]=out[f]||{fecha:f})[k]=Math.round(v*10)/10;};
+ const num=x=>x==null?null:typeof x==='number'?x:parseNum(x);
+ for(const [key,days] of Object.entries(s.metrics||{})){
+  const [name,unitsRaw]=key.split('|');const n=name.toLowerCase();const u=(unitsRaw||'').toLowerCase();
+  for(const [f,p] of Object.entries(days||{})){
+   if(!/^\d{4}-\d\d-\d\d$/.test(f)||!p)continue;const q=num(p.qty);
+   if(n.includes('sleep')){const fac=u.startsWith('min')?1:u==='s'||u.startsWith('sec')?1/60:60;
+    const core=num(p.core),deep=num(p.deep),rem=num(p.rem);
+    let tot=num(p.totalSleep)??num(p.asleep);if(!tot&&(core||deep||rem))tot=(core||0)+(deep||0)+(rem||0);if(!tot&&q)tot=q;
+    put(f,'sueno_min',tot!=null?tot*fac:null);put(f,'profundo',deep!=null?deep*fac:null);put(f,'rem',rem!=null?rem*fac:null);put(f,'nucleo',core!=null?core*fac:null);}
+   else if(n.includes('active_energy'))put(f,'kcal',u==='kj'?q/4.184:q);
+   else if(n.includes('exercise_time'))put(f,'ejercicio',u.startsWith('h')?q*60:q);
+   else if(n.includes('step_count'))put(f,'pasos',q);
+   else if(n.includes('heart_rate_variability'))put(f,'hrv',q);
+   else if(n.includes('resting_heart_rate'))put(f,'fc_reposo',q);
+   else if(n.includes('vo2'))put(f,'vo2max',q);
+   else if(n.includes('body_fat'))put(f,'grasa',q!=null&&q<=1?q*100:q);
+   else if((n.includes('body_mass')&&!n.includes('index')&&!n.includes('lean'))||n==='weight')put(f,'peso',u.includes('lb')?q*.4536:q);
+  }
+ }
+ return Object.values(out).sort((a,b)=>a.fecha<b.fecha?-1:1);
+}
+function haeWorkouts(s){
+ const en=v=>{if(v==null)return null;if(typeof v==='number')return v;if(typeof v==='object'){const q=parseNum(v.qty);return q==null?null:String(v.units||'').toLowerCase()==='kj'?q/4.184:q;}return parseNum(v);};
+ return Object.values(s.workouts||{}).map(w=>{
+  const ini=haeFecha(w.start),fin=haeFecha(w.end);
+  let min=typeof w.duration==='number'?w.duration/60:null;if((!min||min<1)&&ini&&fin)min=(fin-ini)/6e4;
+  const f=String(w.start||'').slice(0,10);
+  return{id:f+'|'+String(w.start||'').slice(11,16)+'|'+(w.name||''),fecha:f,hora:String(w.start||'').slice(11,16),nombre:w.name||'Entreno',min:min?Math.round(min):null,kcal:(()=>{const k=en(w.activeEnergyBurned??w.activeEnergy??w.totalEnergy);return k!=null?Math.round(k):null;})()};
+ }).filter(w=>/^\d{4}-\d\d-\d\d$/.test(w.fecha)).sort((a,b)=>(b.fecha+b.hora).localeCompare(a.fecha+a.hora));
+}
+function adivinaTipo(n){n=String(n||'').toLowerCase();if(/p[aá]del|tenis|tennis|raque|racquet|pickle|squash/.test(n))return'padel';if(/run|carrera|corr|cardio mix|mixed cardio|row|remo|ski|elliptical|el[ií]ptica/.test(n))return'hyrox';if(/functional|strength|cross|hiit|high intensity|interval|core|fuerza|funcional|training|kickbox|boxing/.test(n))return'crossfit';return null;}
+// Entrenos registrados + entrenos del Watch aún no registrados (solo disciplinas conocidas, 15 min o más)
+function allEnt(){return D.entrenos.concat(WW.filter(w=>(w.min||0)>=15&&adivinaTipo(w.nombre)&&!D.entrenos.some(e=>e.watchId===w.id)).map(w=>({fecha:w.fecha,tipo:adivinaTipo(w.nombre),duracion:w.min,kcal:w.kcal,titulo:w.nombre,auto:true})));}
+function workoutPara(fecha,hora){
+ const c=WW.filter(w=>w.fecha===fecha&&(w.min==null||w.min>=15)&&!D.entrenos.some(e=>e.watchId===w.id));if(!c.length)return null;
+ if(!hora)return c[0];const m=h=>{const [a,b]=String(h).split(':').map(Number);return a*60+(b||0);};
+ return c.slice().sort((a,b)=>Math.abs(m(a.hora)-m(hora))-Math.abs(m(b.hora)-m(hora)))[0];
+}
+/* ---- Exportación manual de Apple Salud (gratis): exportar.zip o export.xml ---- */
+async function abrirExportSalud(file){
+ if(/\.xml$/i.test(file.name))return file.stream();
+ const len=file.size,tl=Math.min(len,65557+22),tail=new DataView(await file.slice(len-tl).arrayBuffer());
+ let e=-1;for(let i=tl-22;i>=0;i--){if(tail.getUint32(i,true)===0x06054b50){e=i;break;}}
+ if(e<0)throw new Error('El archivo no es un .zip válido. Elige el “exportar.zip” de Salud.');
+ let cdSize=tail.getUint32(e+12,true),cdOff=tail.getUint32(e+16,true);
+ if(cdOff===0xFFFFFFFF||cdSize===0xFFFFFFFF){const l=e-20;if(l>=0&&tail.getUint32(l,true)===0x07064b50){const o=Number(tail.getBigUint64(l+8,true));const z=new DataView(await file.slice(o,o+56).arrayBuffer());cdSize=Number(z.getBigUint64(40,true));cdOff=Number(z.getBigUint64(48,true));}}
+ const cd=new DataView(await file.slice(cdOff,cdOff+cdSize).arrayBuffer()),dec=new TextDecoder();let p=0,ent=null;
+ while(p+46<=cd.byteLength&&cd.getUint32(p,true)===0x02014b50){
+  const method=cd.getUint16(p+10,true),nl=cd.getUint16(p+28,true),xl=cd.getUint16(p+30,true),cl=cd.getUint16(p+32,true);
+  let csize=cd.getUint32(p+20,true),usize=cd.getUint32(p+24,true),loff=cd.getUint32(p+42,true);
+  const nm=dec.decode(new Uint8Array(cd.buffer,cd.byteOffset+p+46,nl));
+  if(/(^|\/)(export|exportar)\.xml$/i.test(nm)){
+   let q=p+46+nl;const end=q+xl;
+   while(q+4<=end){const id=cd.getUint16(q,true),sz=cd.getUint16(q+2,true);if(id===1){let r=q+4;if(usize===0xFFFFFFFF){usize=Number(cd.getBigUint64(r,true));r+=8;}if(csize===0xFFFFFFFF){csize=Number(cd.getBigUint64(r,true));r+=8;}if(loff===0xFFFFFFFF){loff=Number(cd.getBigUint64(r,true));}}q+=4+sz;}
+   ent={method,csize,usize,loff};break;
+  }
+  p+=46+nl+xl+cl;
+ }
+ if(!ent)throw new Error('No encontré export.xml dentro del zip');
+ const lh=new DataView(await file.slice(ent.loff,ent.loff+30).arrayBuffer());
+ const ini=ent.loff+30+lh.getUint16(26,true)+lh.getUint16(28,true);
+ const raw=file.slice(ini,ini+ent.csize).stream();
+ if(ent.method===0)return raw;
+ if(ent.method!==8)throw new Error('Formato de compresión no soportado');
+ if(typeof DecompressionStream==='undefined')throw new Error('Tu iOS no abre .zip desde aquí: toca el zip en la app Archivos para descomprimirlo y elige export.xml');
+ return raw.pipeThrough(new DecompressionStream('deflate-raw'));
+}
+async function importarExportSalud(file){
+ const t0=Date.now();
+ openModal(`<div class="stack" style="align-items:center;text-align:center;padding:16px 0"><span class="spin" style="width:32px;height:32px;color:var(--cf)"></span><h2 class="disp h2">Leyendo tus datos de Salud</h2><p class="sm muted" id="impProg">Abriendo archivo…</p><p class="xs muted">Se procesa en tu iPhone. Puede tardar 1–2 minutos si tienes años de datos.</p></div>`);
+ try{
+  const reader=(await abrirExportSalud(file)).pipeThrough(new TextDecoderStream()).getReader();
+  const corte=addDays(today(),-200);
+  const T={ActiveEnergyBurned:'kcal',AppleExerciseTime:'ejercicio',StepCount:'pasos',HeartRateVariabilitySDNN:'hrv',RestingHeartRate:'fc_reposo',VO2Max:'vo2max',BodyMass:'peso',BodyFatPercentage:'grasa'};
+  const SUMA={kcal:1,ejercicio:1,pasos:1};
+  const Q={},SL={},WK=[];let wcur=null,resto='',leidos=0,tp=0,nRec=0;
+  const at=(l,a)=>{const k=' '+a+'="';const i=l.indexOf(k);if(i<0)return null;const s=i+k.length;return l.slice(s,l.indexOf('"',s));};
+  const linea=l=>{
+   if(l.indexOf('<Record ')>=0){
+    const ty=at(l,'type');if(!ty)return;const sd=at(l,'startDate');if(!sd||sd.slice(0,10)<corte)return;
+    if(ty.startsWith('HKQuantityTypeIdentifier')){
+     const k=T[ty.slice(24)];if(!k)return;let v=parseFloat(at(l,'value'));if(isNaN(v))return;const u=at(l,'unit');
+     if(k==='kcal'&&u==='kJ')v/=4.184;if(k==='peso'&&u==='lb')v*=.4536;if(k==='grasa'&&v<=1)v*=100;
+     const f=sd.slice(0,10),src=at(l,'sourceName')||'?';const o=((Q[f]=Q[f]||{})[k]=Q[f][k]||{});const s=(o[src]=o[src]||{sum:0,n:0,last:null,t:''});
+     s.sum+=v;s.n++;if(sd>=s.t){s.t=sd;s.last=v;}nRec++;
+    }else if(ty==='HKCategoryTypeIdentifierSleepAnalysis'){
+     const ed=at(l,'endDate'),val=at(l,'value')||'';const a=haeFecha(sd),b=haeFecha(ed);if(!a||!b)return;const min=(b-a)/6e4;if(!(min>0&&min<1000))return;
+     const f=ed.slice(0,10),src=at(l,'sourceName')||'?';const o=((SL[f]=SL[f]||{})[src]=SL[f][src]||{asleep:0,deep:0,rem:0,core:0});
+     if(/Deep/.test(val)){o.deep+=min;o.asleep+=min;}else if(/REM/.test(val)){o.rem+=min;o.asleep+=min;}else if(/Core/.test(val)){o.core+=min;o.asleep+=min;}else if(/Asleep/.test(val))o.asleep+=min;
+     nRec++;
+    }
+    return;
+   }
+   if(l.indexOf('<Workout ')>=0){
+    const sd=at(l,'startDate');if(!sd||sd.slice(0,10)<corte){wcur=null;return;}
+    const ty=(at(l,'workoutActivityType')||'').replace('HKWorkoutActivityType','');let dur=parseFloat(at(l,'duration'));const du=at(l,'durationUnit');if(du==='s'||du==='sec')dur/=60;if(du==='hr'||du==='h')dur*=60;
+    let kc=parseFloat(at(l,'totalEnergyBurned'));if(at(l,'totalEnergyBurnedUnit')==='kJ')kc/=4.184;
+    wcur={id:sd.slice(0,10)+'|'+sd.slice(11,16)+'|'+ty,fecha:sd.slice(0,10),hora:sd.slice(11,16),nombre:ty.replace(/([a-z])([A-Z])/g,'$1 $2')||'Entreno',min:isNaN(dur)?null:Math.round(dur),kcal:isNaN(kc)?null:Math.round(kc)};
+    WK.push(wcur);if(/\/>\s*$/.test(l))wcur=null;return;
+   }
+   if(wcur){
+    if(l.indexOf('<WorkoutStatistics ')>=0&&/ActiveEnergyBurned/.test(at(l,'type')||'')){let s=parseFloat(at(l,'sum'));if(!isNaN(s)){if(at(l,'unit')==='kJ')s/=4.184;wcur.kcal=Math.round(s);}}
+    else if(l.indexOf('</Workout>')>=0)wcur=null;
+   }
+  };
+  for(;;){
+   const {value,done}=await reader.read();if(done)break;
+   leidos+=value.length;const parts=(resto+value).split('\n');resto=parts.pop();for(const l of parts)linea(l);
+   if(Date.now()-tp>350){tp=Date.now();const el=$('#impProg');if(el)el.textContent=`${fN(leidos/1e6,0)} MB leídos · ${fN(nRec,0)} registros útiles`;await new Promise(r=>setTimeout(r,0));}
+  }
+  if(resto)linea(resto);
+  // Consolidar por día (si el iPhone y el Watch registran lo mismo, se toma la fuente con más datos)
+  const dias={};const put=(f,k,v)=>{if(v==null||isNaN(v))return;const r=RANGOS[k];if(r&&(v<r[0]||v>r[1]))return;(dias[f]=dias[f]||{})[k]=Math.round(v*10)/10;};
+  for(const [f,tys] of Object.entries(Q))for(const [k,srcs] of Object.entries(tys)){
+   const arr=Object.values(srcs);let v;
+   if(SUMA[k])v=Math.max(...arr.map(s=>s.sum));
+   else if(k==='hrv'){const s=arr.reduce((a,x)=>({sum:a.sum+x.sum,n:a.n+x.n}),{sum:0,n:0});v=s.sum/s.n;}
+   else v=arr.sort((a,b)=>b.t.localeCompare(a.t))[0].last;
+   put(f,k,v);
+  }
+  for(const [f,srcs] of Object.entries(SL)){const b=Object.values(srcs).sort((x,y)=>y.asleep-x.asleep)[0];if(b&&b.asleep>0){put(f,'sueno_min',b.asleep);if(b.deep)put(f,'profundo',b.deep);if(b.rem)put(f,'rem',b.rem);if(b.core)put(f,'nucleo',b.core);}}
+  const el=$('#impProg');if(el)el.textContent='Guardando…';
+  let n=0;for(const [f,vals] of Object.entries(dias))n+=await mergeDia(f,vals);
+  const mp=new Map(WW.map(w=>[w.id,w]));WK.forEach(w=>mp.set(w.id,w));WW=[...mp.values()].sort((a,b)=>(b.fecha+b.hora).localeCompare(a.fecha+a.hora));await dbPut('kv',WW,'watchWorkouts');
+  const fs=Object.keys(dias).sort();
+  S.lastImport=new Date().toISOString();if(!fuenteWatch())S.lastSync=S.lastImport;
+  S.lastRaw=JSON.stringify({importado:S.lastImport,dias:fs.length,desde:fs[0]||null,hasta:fs[fs.length-1]||null,entrenos_watch:WK.length,segundos:Math.round((Date.now()-t0)/1000),ultimo_dia:fs.length?{fecha:fs[fs.length-1],...dias[fs[fs.length-1]]}:null},null,1);
+  await saveS();closeModal();await refresh();
+  toast(fs.length?`Listo: ${fs.length} días y ${WK.length} entrenos del Watch importados`:'No encontré datos de los últimos 6 meses en el archivo');
+ }catch(err){closeModal();toast(err.message||'No se pudo leer el archivo');console.error(err);}
+}
+async function syncPuente(silent){
+ const url=(S.puenteUrl||'').trim();if(!url)return;
+ if(ui.sincronizando)return;ui.sincronizando=true;if(!silent)render();
+ try{
+  const r=await fetch(url,{cache:'no-store'});if(!r.ok)throw new Error('El puente respondió '+r.status+': revisa la URL');
+  const s=await r.json().catch(()=>{throw new Error('El puente no devolvió datos. ¿Lo implementaste con acceso “Cualquier usuario”?');});
+  if(s.ok===false)throw new Error(s.error==='clave incorrecta'?'Clave incorrecta: revisa el ?key= de la URL':'Error del puente');
+  const dias=haeToDias(s);let n=0;
+  for(const d of dias){const {fecha,...vals}=d;const ex=D.dias.find(x=>x.fecha===fecha);if(ex&&Object.entries(vals).every(([k,v])=>ex[k]===v))continue;n+=await mergeDia(fecha,vals);}
+  WW=haeWorkouts(s);await dbPut('kv',WW,'watchWorkouts');
+  if(s.actualizado)S.lastRaw=JSON.stringify({puente_actualizado:s.actualizado,envios:s.envios,dias:dias.length,entrenos_watch:WW.length,ultimo_dia:dias[dias.length-1]||null},null,1).slice(0,2000);
+  S.lastSync=new Date().toISOString();await saveS();
+  if(!silent||n)toast(n?`Watch sincronizado · ${n} día(s) actualizados`:s.actualizado?'Todo al día':'Puente listo: aún no llegan datos del iPhone');
+ }catch(e){if(!silent)toast(e.message);console.warn(e);}
+ finally{ui.sincronizando=false;await refresh();}
+}
 async function importarTexto(txt){
  let o;try{o=JSON.parse(String(txt).trim());}catch(e){throw new Error('El texto no es un JSON válido');}
  const n=await importSalud(o);await saveS();await refresh();toast(n?'Datos del Watch importados':'No encontré datos en el JSON');
@@ -335,8 +492,8 @@ function vHoy(){
  const ring=rec?`<svg role="img" aria-label="Recuperación ${rec.s} de 100" width="128" height="128" viewBox="0 0 128 128"><circle cx="64" cy="64" r="52" fill="none" stroke="#24272C" stroke-width="12"/><circle cx="64" cy="64" r="52" fill="none" stroke="var(--cf)" stroke-width="12" stroke-linecap="round" stroke-dasharray="${C}" stroke-dashoffset="${(C*(1-rec.s/100)).toFixed(1)}" transform="rotate(-90 64 64)"/></svg>`
   :`<svg aria-hidden="true" width="128" height="128" viewBox="0 0 128 128"><circle cx="64" cy="64" r="52" fill="none" stroke="#24272C" stroke-width="12"/></svg>`;
  // carga semanal
- const lun=semanaLunes();let totalMin=0;const dias=[];
- for(let i=0;i<7;i++){const f=addDays(lun,i);const es=D.entrenos.filter(e=>e.fecha===f);const m={crossfit:0,hyrox:0,padel:0};es.forEach(e=>{m[e.tipo]+=e.duracion||0;});const t=m.crossfit+m.hyrox+m.padel;totalMin+=t;dias.push({l:'LMMJVSD'[i],m,t,hoy:f===today()});}
+ const lun=semanaLunes();let totalMin=0;const dias=[];const AE=allEnt();
+ for(let i=0;i<7;i++){const f=addDays(lun,i);const es=AE.filter(e=>e.fecha===f);const m={crossfit:0,hyrox:0,padel:0};es.forEach(e=>{m[e.tipo]+=e.duracion||0;});const t=m.crossfit+m.hyrox+m.padel;totalMin+=t;dias.push({l:'LMMJVSD'[i],m,t,hoy:f===today()});}
  const mx=Math.max(60,...dias.map(d=>d.t));
  const bars=dias.map(d=>`<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:8px"><div style="width:100%;height:116px;display:flex;flex-direction:column;justify-content:flex-end;gap:2px">${['padel','hyrox','crossfit'].filter(k=>d.m[k]).map(k=>`<div style="height:${Math.max(4,d.m[k]/mx*116).toFixed(0)}px;background:${COLORS[k]};border-radius:4px"></div>`).join('')||'<div style="height:4px;background:#24272C;border-radius:4px"></div>'}</div><span class="xs" style="font-weight:700;color:${d.hoy?'var(--tx)':'var(--mu)'}">${d.l}</span></div>`).join('');
  const comp=S.compNombre&&S.compFecha?diffDays(today(),S.compFecha):null;
@@ -350,15 +507,15 @@ function vHoy(){
 
 <section class="card" style="padding:12px 14px;flex-direction:row;align-items:center;gap:12px">
  <span class="ico" style="background:var(--s2);width:40px;height:40px">${ico('watch',20,'#C9CDD3')}</span>
- <span class="grow"><b class="sm">Apple Watch</b><span class="xs muted">${gistIdLimpio()?'Sincronizado '+relTime(S.lastSync):'Sin configurar · toca Ajustes'}</span></span>
- ${gistIdLimpio()?`<button class="btn" data-act="sync" ${ui.sincronizando?'disabled':''} aria-label="Sincronizar">${ui.sincronizando?'<span class="spin"></span>':ico('sync',18)}</button><button class="btn" data-act="pegar">Pegar</button>`:`<button class="btn pri" data-act="go" data-v="ajustes">Configurar</button>`}
+ <span class="grow"><b class="sm">Apple Watch</b><span class="xs muted">${fuenteWatch()?'Sincronizado '+relTime(S.lastSync):S.lastImport?'Importado '+relTime(S.lastImport):'Sin datos · importa desde Salud'}</span></span>
+ ${fuenteWatch()?`<button class="btn" data-act="sync" ${ui.sincronizando?'disabled':''} aria-label="Sincronizar">${ui.sincronizando?'<span class="spin"></span>':ico('sync',18)}</button><button class="btn" data-act="pegar">Pegar</button>`:`<button class="btn ${S.lastImport&&Date.now()-new Date(S.lastImport)<7*864e5?'':'pri'}" data-act="importSalud">Importar</button>`}
 </section>
 
 <section class="card">
  <div class="row between"><span class="eyebrow">Recuperación</span><span class="pill">${ico('watch',14,'#9AA0A8')}${rec?fFecha(rec.d.fecha):'sin datos'}</span></div>
  <div class="row" style="gap:18px">
   <div style="position:relative;width:128px;height:128px;flex-shrink:0">${ring}<div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center"><span class="num" style="font-size:46px">${rec?rec.s:'—'}</span><span class="xs muted" style="letter-spacing:.08em;text-transform:uppercase">de 100</span></div></div>
-  <div style="display:flex;flex-direction:column;gap:6px;min-width:0"><span class="disp" style="font-size:25px;font-weight:700;line-height:1.05">${rec?rec.txt:'Sin datos del Watch'}</span><span class="sm muted">${rec?esc(rec.notas.join(' · '))+(rec.conBase?'':' · se afina con 7 días de datos'):'Configura el Atajo de Salud en Ajustes o pega el JSON.'}</span></div>
+  <div style="display:flex;flex-direction:column;gap:6px;min-width:0"><span class="disp" style="font-size:25px;font-weight:700;line-height:1.05">${rec?rec.txt:'Sin datos del Watch'}</span><span class="sm muted">${rec?esc(rec.notas.join(' · '))+(rec.conBase?'':' · se afina con 7 días de datos'):'Toca “Importar” arriba para traer tus datos desde la app Salud.'}</span></div>
  </div>
  <div class="g3">
   <div class="tile"><span class="lbl">HRV</span><span class="num md">${fN(rec?.d.hrv,0)}<small> ms</small></span></div>
@@ -572,7 +729,7 @@ function vResumen(){
  const n=ui.rango,fin=today(),ini=addDays(fin,-(n-1)),pfin=addDays(ini,-1),pini=addDays(ini,-n);
  const inR=(f,a,b)=>f>=a&&f<=b;
  const dC=D.dias.filter(d=>inR(d.fecha,ini,fin)),dP=D.dias.filter(d=>inR(d.fecha,pini,pfin));
- const eC=D.entrenos.filter(e=>inR(e.fecha,ini,fin)),eP=D.entrenos.filter(e=>inR(e.fecha,pini,pfin));
+ const AE=allEnt();const eC=AE.filter(e=>inR(e.fecha,ini,fin)),eP=AE.filter(e=>inR(e.fecha,pini,pfin));
  const pC=D.plan.filter(p=>inR(p.fecha,ini,fin)),pP=D.plan.filter(p=>inR(p.fecha,pini,pfin));
  const m=(a,k)=>avg(a.map(d=>d[k]));const sum=a=>a.reduce((s,e)=>s+(e.duracion||0),0);
  const cumpl=a=>a.length?a.filter(p=>p.hecho).length/a.length*100:null;
@@ -590,7 +747,7 @@ function vResumen(){
  if(dd('sue')!=null&&Math.abs(dd('sue'))>=10)add(dd('sue')>0,`Dormiste ${fN(Math.abs(dd('sue')),0)} min ${dd('sue')>0?'más':'menos'} por noche (${fDur(K.sue[0])} h).`);
  if(vo2d!=null&&Math.abs(vo2d)>=.3)add(vo2d>0,`VO₂ máx ${vo2d>0?'subió':'bajó'} ${fN(Math.abs(vo2d))} en el período.`);
  if(pesod!=null&&Math.abs(pesod)>=.3)add(null,`Peso ${pesod<0?'bajó':'subió'} ${fN(Math.abs(pesod))} kg en el período.`);
- if(K.cu[0]!=null)add(K.cu[0]>=80,`Cumpliste ${fN(K.cu[0],0)}% de las sesiones planificadas.`);
+ if(K.cu[0]!=null&&pC.length>=3)add(K.cu[0]>=80,`Cumpliste ${fN(K.cu[0],0)}% de las sesiones planificadas.`);
  const hyC=eC.filter(e=>e.tipo==='hyrox'&&e.hyrox?.total),hyAnt=D.entrenos.filter(e=>e.tipo==='hyrox'&&e.hyrox?.total&&e.fecha<ini);
  const hyBest=hyC.length?Math.min(...hyC.map(e=>e.hyrox.total)):null,hyBestAnt=hyAnt.length?Math.min(...hyAnt.map(e=>e.hyrox.total)):null;
  if(hyBest!=null&&hyBestAnt!=null&&hyBest<hyBestAnt)add(true,`Nuevo mejor tiempo HYROX: ${fTime(hyBest)} (${fTime(hyBestAnt-hyBest)} más rápido).`);
@@ -601,7 +758,7 @@ function vResumen(){
  // volumen
  let vol;
  if(n===7){vol=[...Array(7)].map((_,i)=>{const f=addDays(ini,i);const es=eC.filter(e=>e.fecha===f);const segs=['crossfit','hyrox','padel'].map(k=>({k,v:es.filter(e=>e.tipo===k).reduce((a,e)=>a+(e.duracion||0),0),color:COLORS[k]}));const t=segs.reduce((a,s)=>a+s.v,0);const d=parseYmd(f);return{label:'DLMMJVS'[d.getDay()],tip:`${DIAS[d.getDay()]} ${fFecha(f)} · ${t} min`,segs};});}
- else{const W=n/7,lun=semanaLunes();vol=[...Array(W)].map((_,i)=>{const a=addDays(lun,-7*(W-1-i)),b=addDays(a,6);const es=D.entrenos.filter(e=>inR(e.fecha,a,b));const segs=['crossfit','hyrox','padel'].map(k=>({k,v:es.filter(e=>e.tipo===k).reduce((s,e)=>s+(e.duracion||0),0),color:COLORS[k]}));const d=parseYmd(a);return{label:`${d.getDate()}/${d.getMonth()+1}`,tip:`Semana ${fFecha(a)} · ${segs.filter(s=>s.v).map(s=>TIPOS[s.k]+' '+s.v).join(' · ')||'0'} min`,segs};});}
+ else{const W=n/7,lun=semanaLunes();vol=[...Array(W)].map((_,i)=>{const a=addDays(lun,-7*(W-1-i)),b=addDays(a,6);const es=AE.filter(e=>inR(e.fecha,a,b));const segs=['crossfit','hyrox','padel'].map(k=>({k,v:es.filter(e=>e.tipo===k).reduce((s,e)=>s+(e.duracion||0),0),color:COLORS[k]}));const d=parseYmd(a);return{label:`${d.getDate()}/${d.getMonth()+1}`,tip:`Semana ${fFecha(a)} · ${segs.filter(s=>s.v).map(s=>TIPOS[s.k]+' '+s.v).join(' · ')||'0'} min`,segs};});}
  const serie=k=>dC.filter(d=>d[k]!=null).map(d=>({x:d.fecha,y:k==='sueno_min'?d[k]/60:d[k]}));
  const diarioBarras=(k,color,div=1,unitTip='')=>{
   if(n<=28)return [...Array(n)].map((_,i)=>{const f=addDays(ini,i);const d=dC.find(x=>x.fecha===f);const v=d?.[k]!=null?d[k]/div:0;return{label:n===7?'DLMMJVS'[parseYmd(f).getDay()]:String(parseYmd(f).getDate()),tip:`${fFecha(f)} · ${d?.[k]!=null?fN(v,div>1?1:0)+unitTip:'sin dato'}`,segs:[{v,color}]};});
@@ -675,6 +832,8 @@ function vEntrenos(){
   <div class="row" style="gap:4px" aria-label="Últimos partidos">${u5.map(e=>`<span style="width:26px;height:26px;border-radius:8px;background:${e.padel.res==='G'?'var(--pa)':'#2A2E33'};color:${e.padel.res==='G'?'#0B0C0E':'var(--tx)'};font-size:12px;font-weight:800;display:flex;align-items:center;justify-content:center">${e.padel.res}</span>`).join('')}</div></div>
   <div class="g2" style="gap:8px"><div class="tile"><span class="lbl">Torneo</span><span class="num md">${tor.length?`${gt} – ${tor.length-gt}`:'—'}</span></div><div class="tile"><span class="lbl">Kcal / partido</span><span class="num md">${fN(kc,0)}</span></div></div></section>`;
  }
+ const pend=WW.filter(w=>(w.min==null||w.min>=15)&&diffDays(w.fecha,today())<=14&&!D.entrenos.some(e=>e.watchId===w.id)&&(f==='todos'||adivinaTipo(w.nombre)===f)).slice(0,8);
+ if(pend.length)html+=`<section class="card" style="gap:0"><div class="row between" style="padding-bottom:6px"><h2 class="disp h2">Del Apple Watch</h2><span class="xs muted">sin registrar</span></div>${pend.map(w=>`<div class="pitem"><span class="ico" style="background:var(--s2);width:40px;height:40px">${ico('watch',20,'#C9CDD3')}</span><span class="grow"><b style="font-size:14px">${esc(w.nombre)}</b><span class="xs muted">${fFecha(w.fecha)} ${esc(w.hora)}${w.min?' · '+w.min+' min':''}${w.kcal?' · '+fN(w.kcal,0)+' kcal':''}</span></span><button class="btn" data-act="agregarWatch" data-v="${esc(w.id)}" style="min-height:40px;padding:0 12px">Agregar</button></div>`).join('')}</section>`;
  html+=`<section class="card" style="gap:0"><h2 class="disp h2" style="padding-bottom:6px">Historial</h2>${list.length?list.slice(0,60).map(entItem).join(''):'<p class="sm muted" style="padding:10px 0">Sin registros todavía.</p>'}</section>`;
  return html;
 }
@@ -705,6 +864,7 @@ function vCheckin(){
  <div class="g2">${campo('peso','Peso (kg)','84,0')}${campo('cintura','Cintura (cm)','86')}${campo('pecho','Pecho (cm)','Opcional')}${campo('brazo','Brazo (cm)','Opcional')}${campo('cadera','Cadera (cm)','Opcional')}${campo('muslo','Muslo (cm)','Opcional')}</div>
  <label class="f">Notas (dieta, lesiones, cómo te sientes)<textarea data-d="notas" rows="3">${esc(d.notas)}</textarea></label>
 </section>
+${fuenteWatch()?'':`<section class="card" style="flex-direction:row;align-items:center;gap:12px"><span class="ico" style="background:var(--s2);width:44px;height:44px">${ico('watch',22,'#C9CDD3')}</span><span class="grow"><b class="sm">Datos del Watch de la semana</b><span class="xs muted">${S.lastImport?'Última importación '+relTime(S.lastImport):'Aún no importas datos de Salud'}</span></span><button class="btn ${S.lastImport&&Date.now()-new Date(S.lastImport)<6*864e5?'':'pri'}" data-act="importSalud">Importar</button></section>`}
 <button class="btn pri big" data-act="guardarCheckin">${ex?'Actualizar check-in':'Guardar check-in'}</button>
 ${ex?`<section class="g2"><button class="btn lime" data-act="analizar" data-v="${d.id}" ${busy||!nf?'disabled':''}>${busy?'<span class="spin"></span>Analizando…':ico('spark',18,'#0B0C0E')+'Analizar con IA'}</button><button class="btn" data-act="compartir" data-v="${d.id}" ${nf?'':'disabled'}>${ico('share',18)}Enviar fotos</button></section>
 ${busy?'<p class="sm muted">Enviando fotos a Claude… suele tardar entre 20 y 60 segundos.</p>':''}
@@ -712,14 +872,51 @@ ${ex.analisis?renderAnalisis(ex.analisis,ex.id):''}`:''}
 `;
 }
 
-function estadoWatch(){
- const pasos=[[!!gistIdLimpio(),'ID del Gist guardado en FORJA'],[!!S.lastRaw,'Atajo funcionando (primer dato recibido)'],[!!(latest('hrv',2)||latest('kcal',2)||latest('sueno_min',2)),'Datos de las últimas 48 horas']];
+function exportBlock(){
+ return `<p class="sm muted"><b>Gratis y sin configurar nada.</b> Una vez por semana (por ejemplo el domingo, junto con tus fotos) exportas tus datos desde la app Salud y los importas aquí. Toma 1–2 minutos y trae sueño con fases, HRV, pulso en reposo, kcal, ejercicio, pasos, VO₂ máx, peso y tus entrenos del Watch.</p>
+ <button class="btn pri big" data-act="importSalud">Importar datos de Salud</button>
+ <details ${S.lastImport?'':'open'}><summary>Cómo exportar desde el iPhone</summary><ol>
+  <li>Abre la app <b>Salud</b> y toca tu <b>foto o iniciales</b> arriba a la derecha.</li>
+  <li>Baja hasta el final y toca <b>Exportar todos los datos de salud</b> › <b>Exportar</b>. Espera a que termine (1 a 3 minutos).</li>
+  <li>En el menú que aparece elige <b>Guardar en Archivos</b> › <b>En mi iPhone</b> › <b>Guardar</b>. Queda un archivo <code>exportar.zip</code>.</li>
+  <li>Vuelve a FORJA, toca <b>Importar datos de Salud</b> y elige ese archivo. FORJA lee los últimos 6 meses.</li>
+  <li>Todo se procesa dentro de tu iPhone; el archivo no se sube a ningún lado. Después puedes borrarlo de Archivos.</li>
+ </ol></details>`;
+}
+function haeBlock(){
+ const base=location.href.replace(/[#?].*$/,'').replace(/index\.html$/,'');
+ return `<p class="sm muted">La app <b>Health Auto Export</b> envía tus datos de Salud (y tus entrenos del Watch) automáticamente, sin armar atajos. Llegan a un “puente” gratis en tu Google Drive y FORJA los lee desde ahí.</p>
+ <label class="f">URL del puente (termina en ?key=…)<input data-s="puenteUrl" value="${esc(S.puenteUrl||'')}" placeholder="https://script.google.com/macros/s/…/exec?key=…" autocapitalize="off" autocorrect="off" spellcheck="false"></label>
+ <div class="g2"><button class="btn pri" data-act="sync">Sincronizar</button><button class="btn" data-act="pegar">Pegar JSON</button></div>
+ <details><summary>1 · Crear el puente en Google (PC, 5 min)</summary><ol>
+  <li>Entra a <a href="https://script.new" target="_blank" rel="noopener">script.new</a> con tu cuenta de Google. Ponle de nombre “Puente FORJA”.</li>
+  <li>Borra el código que aparece y pega el del archivo <a href="${esc(base)}puente-forja.gs" target="_blank" rel="noopener">puente-forja.gs</a>.</li>
+  <li>En la línea <code>const CLAVE = 'cambia-esta-clave';</code> pon una palabra secreta tuya, sin espacios. Guarda (ícono de disquete).</li>
+  <li>Arriba elige la función <b>probar</b> › <b>Ejecutar</b> › <b>Revisar permisos</b> › tu cuenta › “Configuración avanzada” › “Ir a Puente FORJA” › <b>Permitir</b>. Es tu propio script, por eso Google avisa que “no está verificado”.</li>
+  <li><b>Implementar</b> › <b>Nueva implementación</b> › tipo <b>Aplicación web</b> · Ejecutar como <b>Yo</b> · Quién tiene acceso <b>Cualquier usuario</b> › Implementar.</li>
+  <li>Copia la URL que termina en <code>/exec</code>, agrégale <code>?key=TU_CLAVE</code> y pégala arriba.</li>
+ </ol></details>
+ <details><summary>2 · Configurar Health Auto Export (iPhone, 5 min)</summary><ol>
+  <li>Instala <a href="https://apps.apple.com/app/id1115567069" target="_blank" rel="noopener">Health Auto Export – JSON+CSV</a> y dale acceso a Salud (activa todo).</li>
+  <li>Las exportaciones automáticas requieren <b>Premium</b> (tiene 7 días de prueba gratis; luego anual o de por vida).</li>
+  <li><b>Automations</b> › <b>+</b> › tipo <b>REST API</b>. Nombre “FORJA métricas”. URL: la misma URL del puente con <code>?key=</code>.</li>
+  <li>Data Type: <b>Health Metrics</b>. Selecciona: Active Energy, Apple Exercise Time, Step Count, Heart Rate Variability, Resting Heart Rate, VO2 Max, Sleep Analysis y, si usas balanza, Weight y Body Fat Percentage.</li>
+  <li>Export Format <b>JSON</b> · Time Grouping / Aggregation <b>Days</b> · rango <b>últimos 7 días</b> · frecuencia cada <b>1 hora</b>. Activa la automatización.</li>
+  <li>Crea otra igual llamada “FORJA entrenos” con Data Type <b>Workouts</b> (sin rutas ni datos por minuto).</li>
+  <li>Usa “Manual Export” una vez para probar y toca “Sincronizar” aquí. Los nombres exactos de los menús pueden variar levemente según la versión de la app.</li>
+ </ol></details>`;
+}
+function estadoWatch(fu){
+ const f=fuenteWatch();const rec=!!(latest('hrv',8)||latest('kcal',8)||latest('sueno_min',8));
+ if(fu==='export'){const p2=[[!!S.lastImport,'Exportación de Salud importada'],[!!S.lastImport&&Date.now()-new Date(S.lastImport)<8*864e5,'Importada en la última semana'],[rec,'Datos de los últimos 7 días']];return `<div class="stack" style="gap:10px;background:var(--s2);border-radius:14px;padding:12px 14px">${p2.map(([ok,t])=>`<span class="row sm" style="gap:8px">${ok?ico('check',16,'#C6F432',2.6):ico('x',16,'#FF8A80',2.4)}<span class="grow">${t}</span><span class="xs ${ok?'up':'down'}" style="font-weight:700">${ok?'Listo':'Pendiente'}</span></span>`).join('')}</div>`;}
+ const pasos=[[!!f,f==='atajo'?'ID del Gist guardado en FORJA':'URL del puente guardada en FORJA'],[!!S.lastRaw,'Primer dato recibido del iPhone'],[!!(latest('hrv',2)||latest('kcal',2)||latest('sueno_min',2)),'Datos de las últimas 48 horas']];
  return `<div class="stack" style="gap:10px;background:var(--s2);border-radius:14px;padding:12px 14px">${pasos.map(([ok,t])=>`<span class="row sm" style="gap:8px">${ok?ico('check',16,'#C6F432',2.6):ico('x',16,'#FF8A80',2.4)}<span class="grow">${t}</span><span class="xs ${ok?'up':'down'}" style="font-weight:700">${ok?'Listo':'Pendiente'}</span></span>`).join('')}</div>`;
 }
 function vAjustes(){
  const v=k=>esc(S[k]??'');
  const tpl=`{"fecha":"⟨FechaHoy⟩","kcal_ayer":"⟨KcalAyer⟩","ejercicio_ayer":"⟨EjercicioAyer⟩","pasos_ayer":"⟨PasosAyer⟩","sueno":"⟨Sueño⟩","profundo":"⟨Profundo⟩","rem":"⟨REM⟩","nucleo":"⟨Núcleo⟩","kcal_hoy":"⟨KcalHoy⟩","hrv":"⟨HRV⟩","fc_reposo":"⟨FCReposo⟩","vo2max":"⟨VO2⟩","peso":"⟨Peso⟩"}`;
  const gid=gistIdLimpio()||'TU_ID_DEL_GIST';
+ const fu=ui.fuente||(S.puenteUrl?'hae':S.gistId?'atajo':'export');
  return `
 <header class="row between"><div style="display:flex;flex-direction:column;gap:2px"><span class="eyebrow">FORJA ${VERSION}</span><h1 class="disp h1">Ajustes</h1></div><button class="iconbtn" data-act="go" data-v="hoy" aria-label="Volver">${ico('x',20)}</button></header>
 
@@ -731,8 +928,10 @@ function vAjustes(){
 </section>
 
 <section class="card"><div class="row between"><h2 class="disp h2">Apple Watch</h2><span class="pill">${ico('watch',14,'#9AA0A8')}${relTime(S.lastSync)}</span></div>
- <p class="sm muted">El Watch ya guarda todo en la app Salud del iPhone, pero FORJA no puede leer Salud directo: un Atajo lo lee cada mañana y lo deja en un Gist de GitHub, desde donde FORJA lo descarga. Se configura una sola vez.</p>
- ${estadoWatch()}
+ <p class="sm muted">El Watch ya guarda todo en la app Salud del iPhone, pero una app web no puede leer Salud directo: necesita un intermediario que envíe los datos. Elige uno (se configura una sola vez).</p>
+ ${estadoWatch(fu)}
+ <div class="seg">${[['export','Exportar · gratis'],['atajo','Atajo · gratis'],['hae','Auto Export · pago']].map(([k,l])=>`<button class="${fu===k?'on':''}" data-act="fuente" data-v="${k}">${l}</button>`).join('')}</div>
+ ${fu==='export'?exportBlock():fu==='hae'?haeBlock():`
  <label class="f">ID del Gist (o su URL)<input data-s="gistId" value="${v('gistId')}" placeholder="a1b2c3d4e5…" autocapitalize="off" autocorrect="off" spellcheck="false"></label>
  <div class="g3"><button class="btn pri" data-act="sync">Sincronizar</button><button class="btn" data-act="pegar">Pegar</button><button class="btn" data-act="importJson">Archivo</button></div>
 
@@ -764,7 +963,7 @@ function vAjustes(){
   <li>Crea un segundo atajo “FORJA diario”: <b>Obtener archivo</b> <code>Atajos/forja_ultimo.txt</code> (desactiva “Mostrar error si no existe”) › <b>Si</b> el archivo <i>es</i> FechaHoy › <b>Detener atajo</b> › fin del Si › <b>Ejecutar atajo</b> “Exportar a FORJA” › <b>Guardar archivo</b> FechaHoy en <code>Atajos/forja_ultimo.txt</code> (sobrescribir, sin preguntar).</li>
   <li>Atajos › <b>Automatización</b> › <b>+</b> › <b>App</b> › elige una app que abras al despertar (WhatsApp, Mail…) › <b>Se abre</b> › <b>Ejecutar inmediatamente</b> › atajo “FORJA diario”. Corre una vez al día, con sueño y actividad de ayer completos.</li>
   <li>Para forzarlo en cualquier momento: ejecuta “Exportar a FORJA” desde el widget o el botón de Acción.</li>
- </ol></details>
+ </ol></details>`}
  ${S.lastRaw?`<details><summary>Último dato recibido</summary><pre>${esc(S.lastRaw)}</pre></details>`:''}
 </section>
 
@@ -789,7 +988,7 @@ function modalEntreno(e,preset){
  const x=e||preset||{fecha:today(),tipo:ui.filtro!=='todos'?ui.filtro:'crossfit'};const h=x.hyrox||{},p=x.padel||{};
  const t=s=>s!=null?fTime(s):'';
  openModal(`<form data-form="entreno" class="stack">
- <input type="hidden" name="id" value="${x.id??''}"><input type="hidden" name="planId" value="${x.planId??''}">
+ <input type="hidden" name="id" value="${x.id??''}"><input type="hidden" name="planId" value="${x.planId??''}"><input type="hidden" name="watchId" value="${esc(x.watchId??'')}">
  <div class="row between"><h2 class="disp h2">${e?'Editar':'Nuevo'} entreno</h2><button type="button" class="btn ghost" data-act="cerrar" aria-label="Cerrar">${ico('x',18)}</button></div>
  <div class="g2"><label class="f">Disciplina<select name="tipo">${Object.entries(TIPOS).map(([k,l])=>`<option value="${k}" ${x.tipo===k?'selected':''}>${l}</option>`).join('')}</select></label><label class="f">Fecha<input type="date" name="fecha" value="${x.fecha}"></label></div>
  <label class="f">Título<input name="titulo" value="${esc(x.titulo||'')}" placeholder="Ej: Fuerza + Metcon, Simulación, Partido amistoso"></label>
@@ -812,6 +1011,7 @@ async function submitEntreno(form){
  const fd=new FormData(form);const g=k=>(fd.get(k)||'').toString().trim();const tipo=g('tipo');
  const o={fecha:g('fecha')||today(),tipo,titulo:g('titulo'),duracion:parseNum(g('duracion')),kcal:parseNum(g('kcal')),notas:g('notas')};
  if(g('id'))o.id=Number(g('id'));
+ if(g('watchId'))o.watchId=g('watchId');else{const ex=g('id')&&D.entrenos.find(e=>e.id==g('id'));if(ex?.watchId)o.watchId=ex.watchId;}
  if(tipo==='padel')o.padel={res:g('res')||'G',marcador:g('marcador'),torneo:fd.get('torneo')==='on'};
  if(tipo==='hyrox')o.hyrox={total:parseTime(g('h_total')),running:parseTime(g('h_running')),roxzone:parseTime(g('h_rox')),splits:ESTACIONES.map((_,i)=>parseTime(g('h_s'+i)))};
  const key=await dbPut('entrenos',o);
@@ -848,7 +1048,7 @@ function contexto(ck,prev,first){
  const med=c=>[c.peso!=null?`peso ${c.peso} kg`:null,...MEDIDAS.map(([k,l])=>c[k]!=null?`${l.toLowerCase()} ${c[k]} cm`:null)].filter(Boolean).join(', ')||'sin medidas';
  const des=addDays(ck.id,-7);const ds=D.dias.filter(d=>d.fecha>des&&d.fecha<=ck.id);
  const w=[['kcal activas/día','kcal',0],['min ejercicio/día','ejercicio',0],['sueño (h)','sueno_min',1],['HRV (ms)','hrv',0],['FC reposo','fc_reposo',0],['VO2máx','vo2max',1]].map(([l,k,dec])=>{let a=avg(ds.map(d=>d[k]));if(a==null)return null;if(k==='sueno_min')a/=60;return `${l} ${fN(a,dec)}`;}).filter(Boolean).join(', ');
- const es=D.entrenos.filter(e=>e.fecha>des&&e.fecha<=ck.id);const porT=Object.keys(TIPOS).map(k=>{const x=es.filter(e=>e.tipo===k);return x.length?`${TIPOS[k]}: ${x.length} sesiones, ${fN(x.reduce((a,e)=>a+(e.duracion||0),0),0)} min`:null;}).filter(Boolean).join('; ');
+ const es=allEnt().filter(e=>e.fecha>des&&e.fecha<=ck.id);const porT=Object.keys(TIPOS).map(k=>{const x=es.filter(e=>e.tipo===k);return x.length?`${TIPOS[k]}: ${x.length} sesiones, ${fN(x.reduce((a,e)=>a+(e.duracion||0),0),0)} min`:null;}).filter(Boolean).join('; ');
  const L=[`Check-in actual (${ck.id}): ${med(ck)}.`];
  if(ck.notas)L.push(`Notas del atleta: ${ck.notas}`);
  if(prev)L.push(`Check-in anterior (${prev.id}): ${med(prev)}.${prev.analisis?.resumen?' Lectura anterior: '+prev.analisis.resumen:''}`);
@@ -911,12 +1111,12 @@ async function restaurar(file){
 
 /* ================= Eventos ================= */
 const ACT={
- go:v=>go(v), sync:()=>syncGist(false), pegar:pegarSalud, importJson:()=>$('#fileJson').click(),
+ go:v=>go(v), sync:()=>syncWatch(false), importSalud:()=>$('#fileSalud').click(), fuente:v=>{ui.fuente=v;render();}, agregarWatch:v=>{const w=WW.find(x=>x.id===v);if(w)modalEntreno(null,{fecha:w.fecha,tipo:adivinaTipo(w.nombre)||'crossfit',titulo:w.nombre,duracion:w.min,kcal:w.kcal,watchId:w.id});}, pegar:pegarSalud, importJson:()=>$('#fileJson').click(),
  angulo:v=>{ui.angulo=v;render();}, filtro:v=>{ui.filtro=v;render();},
  nuevoEntreno:()=>modalEntreno(), editEntreno:v=>modalEntreno(D.entrenos.find(x=>x.id==v)),
  delEntreno:async v=>{if(confirm('¿Eliminar este entreno?')){await dbDel('entrenos',Number(v));for(const p of D.plan.filter(p=>p.hecho==v)){delete p.hecho;await dbPut('plan',p);}closeModal();await refresh();}},
  nuevoPlan:v=>modalPlan(null,v), editPlan:v=>modalPlan(D.plan.find(x=>x.id==v)),
- hacerPlan:v=>{const p=D.plan.find(x=>x.id==v);if(p)modalEntreno(null,{fecha:p.fecha,tipo:p.tipo,titulo:p.titulo,duracion:p.duracion,notas:p.notas,planId:p.id});},
+ hacerPlan:v=>{const p=D.plan.find(x=>x.id==v);if(!p)return;const w=workoutPara(p.fecha,p.hora);modalEntreno(null,{fecha:p.fecha,tipo:p.tipo,titulo:p.titulo,duracion:w?.min??p.duracion,kcal:w?.kcal,notas:p.notas,planId:p.id,watchId:w?.id});if(w)toast('Datos tomados del Watch: '+w.nombre+' '+w.hora);},
  delPlan:async v=>{if(confirm('¿Eliminar esta sesión del plan?')){await dbDel('plan',Number(v));closeModal();await refresh();}},
  delSerie:async v=>{const p=D.plan.find(x=>x.id==v);if(!p||!confirm('¿Eliminar esta sesión y todas las siguientes de la serie?'))return;for(const q of D.plan.filter(q=>q.serie===p.serie&&q.fecha>=p.fecha))await dbDel('plan',q.id);closeModal();await refresh();},
  semanaMov:v=>{ui.semana=v==='0'?0:ui.semana+Number(v);render();window.scrollTo(0,0);},
@@ -940,11 +1140,12 @@ document.addEventListener('change',async e=>{
  const t=e.target;
  try{
   if(t.dataset.foto){const f=t.files?.[0];if(!f)return;toast('Procesando foto…');ui.draft.fotos[t.dataset.foto]=await compress(f);render();return;}
-  if(t.dataset.s){let val=t.value;if(t.dataset.s==='gistId'){S.gistSeen=[];}S[t.dataset.s]=val;await saveS();if(t.dataset.s==='gistId'&&gistIdLimpio())syncGist(false);return;}
+  if(t.dataset.s){let val=t.value;if(t.dataset.s==='gistId'){S.gistSeen=[];}S[t.dataset.s]=val;await saveS();if(t.dataset.s==='gistId'&&gistIdLimpio())syncGist(false);if(t.dataset.s==='puenteUrl'&&S.puenteUrl.trim()){S.lastRaw='';syncPuente(false);}return;}
   if(t.dataset.d==='id'){if(t.value){loadDraft(t.value);render();}return;}
   if(t.dataset.cmp){ui['cmp'+t.dataset.cmp]=t.value;render();return;}
   if(t.name==='tipo'&&t.form){t.form.querySelectorAll('[data-sec]').forEach(s=>s.hidden=s.dataset.sec!==t.value);return;}
   if(t.id==='fileJson'){const f=t.files?.[0];t.value='';if(f)await importarTexto(await f.text());return;}
+  if(t.id==='fileSalud'){const f=t.files?.[0];t.value='';if(!f)return;if(/\.json$/i.test(f.name)){const o=JSON.parse(await f.text());if(Array.isArray(o.watchWorkouts)){const mp=new Map(WW.map(w=>[w.id,w]));o.watchWorkouts.forEach(w=>mp.set(w.id,w));WW=[...mp.values()].sort((a,b)=>(b.fecha+b.hora).localeCompare(a.fecha+a.hora));await dbPut('kv',WW,'watchWorkouts');}S.lastImport=new Date().toISOString();await importarTexto(JSON.stringify(o.dias||o));}else await importarExportSalud(f);return;}
   if(t.id==='fileBackup'){const f=t.files?.[0];t.value='';if(f)await restaurar(f);return;}
  }catch(err){console.error(err);toast(err.message||String(err));}
 });
@@ -964,7 +1165,7 @@ window.addEventListener('scroll',()=>tip.classList.remove('show'),{passive:true}
 /* ================= Inicio ================= */
 (async()=>{
  try{
-  db=await openDB();S={...DEF,...(await dbGet('kv','settings')||{})};await loadAll();
+  db=await openDB();S={...DEF,...(await dbGet('kv','settings')||{})};WW=(await dbGet('kv','watchWorkouts'))||[];await loadAll();
   if(!S.seedPlan){if(!D.plan.length){await dbPut('plan',{fecha:'2026-10-20',hora:'18:00',tipo:'crossfit',titulo:'CrossFit',duracion:60});await dbPut('plan',{fecha:'2026-10-20',hora:'19:30',tipo:'padel',titulo:'Pádel',duracion:90});}S.seedPlan=true;await saveS();await loadAll();}
   go('hoy');
   if(navigator.storage&&navigator.storage.persist)navigator.storage.persist().catch(()=>{});
